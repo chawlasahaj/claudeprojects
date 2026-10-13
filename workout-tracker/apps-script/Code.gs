@@ -49,6 +49,9 @@ function onOpen() {
 
 function setup() {
   var ss = SpreadsheetApp.getActive();
+  if (!ss) {
+    throw new Error("This script isn't attached to a Sheet. Open your Google Sheet, go to Extensions → Apps Script, and paste the code there.");
+  }
   PropertiesService.getScriptProperties().setProperty("SHEET_ID", ss.getId());
   Object.keys(TABS).forEach(function (name) {
     var sh = ss.getSheetByName(name) || ss.insertSheet(name);
