@@ -125,3 +125,20 @@ test("one client can't overwrite another's sets, and junk is rejected", () => {
   // Each client only ever sees their own plan and log.
   assert.equal(get(ctx, { action: "bootstrap", token: "mumtoken99" }).log.length, 0);
 });
+
+test("checkbox columns (which read FALSE on empty rows) don't push data to the bottom", () => {
+  const { ctx, sheets, token } = setUp();
+  const clients = sheets.get("Clients");
+  assert.equal(clients.get(2, 1), "test"); // seeded at the top, not at row 1001
+  assert.equal(clients.get(5, 4), false); // the empty rows below really do read FALSE
+  // The coach adds a "reviewed" checkbox column to Log.
+  const log = sheets.get("Log");
+  log.getRange(1, 14).setValue("reviewed");
+  log.getRange(2, 14, 999, 1).setDataValidation({ checkbox: true });
+  post(ctx, { token, ops: [setOp()] });
+  assert.equal(log.get(2, 13), "i1.0.1");
+  assert.equal(log.get(2, 14), false); // their column is left as it was
+  // A second client typed in by hand under the test client is found.
+  clients.getRange(3, 1, 1, 5).setValues([["mum", "Mum", "'mumtoken99", true, true]]);
+  assert.equal(get(ctx, { action: "bootstrap", token: "mumtoken99" }).client.name, "Mum");
+});

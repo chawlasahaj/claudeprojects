@@ -30,6 +30,10 @@ var TEXT_COLUMNS = {
   Sessions: ["instance_id", "client_id", "date", "session_name", "started_at", "finished_at", "note"],
 };
 
+// A row counts as data only when this column is filled in. Checkbox columns read
+// FALSE on every empty row, so "last row with anything in it" can't be trusted.
+var KEY_COLUMNS = { Clients: "client_id", Exercises: "exercise", Program: "exercise", Log: "entry_id", Sessions: "instance_id", Settings: "key" };
+
 var PROGRAM_FIELDS = ["session", "session_name", "order", "exercise", "sets", "reps", "target_kg", "target_rir", "rest_sec", "warmup_sets", "note"];
 var EXERCISE_FIELDS = ["exercise", "video_url", "primary_muscles", "secondary_muscles", "bodyweight", "cues"];
 var LOG_FIELDS = ["entry_id", "instance_id", "date", "logged_at", "session", "session_name", "exercise", "set_type", "set_no", "kg", "reps", "rir"];
@@ -95,7 +99,7 @@ function setup() {
 // A test client and a small plan, only when the tabs are empty.
 function seed_(ss) {
   var ex = ss.getSheetByName("Exercises");
-  if (ex.getLastRow() < 2) {
+  if (lastDataRow_(ex) < 2) {
     appendObjects_(ex, [
       { exercise: "Goblet Squat", primary_muscles: "Quads, Glutes, Adductors", secondary_muscles: "Abs", bodyweight: false, cues: "Elbows inside the knees, chest tall." },
       { exercise: "DB Incline Press (neutral grip)", primary_muscles: "Chest, Front Delts", secondary_muscles: "Triceps", bodyweight: false, cues: "Palms facing each other." },
@@ -104,11 +108,11 @@ function seed_(ss) {
     ]);
   }
   var clients = ss.getSheetByName("Clients");
-  if (clients.getLastRow() < 2) {
+  if (lastDataRow_(clients) < 2) {
     appendObjects_(clients, [{ client_id: "test", name: "Test", token: newToken_(), show_rir: true, active: true, notes: "Try the app with this one, then add real clients below." }]);
   }
   var program = ss.getSheetByName("Program");
-  if (program.getLastRow() < 2) {
+  if (lastDataRow_(program) < 2) {
     var rows = [];
     [1, 2].forEach(function (n) {
       rows.push(
@@ -121,7 +125,7 @@ function seed_(ss) {
     appendObjects_(program, rows);
   }
   var settings = ss.getSheetByName("Settings");
-  if (settings.getLastRow() < 2) {
+  if (lastDataRow_(settings) < 2) {
     appendObjects_(settings, [
       { key: "app_url", value: "" },
       { key: "notify_email", value: "" },
@@ -320,18 +324,38 @@ function headers_(sh) {
   return map;
 }
 
+// The last row whose key column is filled in (1 when there's only the header).
+function lastDataRow_(sh) {
+  var last = sh.getLastRow();
+  if (last < 2) return 1;
+  var key = headers_(sh)[KEY_COLUMNS[sh.getName()]];
+  if (key == null) return last;
+  var vals = sh.getRange(2, key + 1, last - 1, 1).getValues();
+  for (var i = vals.length - 1; i >= 0; i--) {
+    if (String(vals[i][0]).trim() !== "") return i + 2;
+  }
+  return 1;
+}
+
 function rows_(name) {
   var sh = sheet_(name);
-  var last = sh.getLastRow();
+  var last = lastDataRow_(sh);
   if (last < 2) return [];
   var h = headers_(sh);
-  return sh.getRange(2, 1, last - 1, sh.getLastColumn()).getValues().map(function (r) {
-    var o = {};
-    Object.keys(h).forEach(function (k) {
-      o[k] = r[h[k]];
+  var key = KEY_COLUMNS[name];
+  return sh
+    .getRange(2, 1, last - 1, sh.getLastColumn())
+    .getValues()
+    .map(function (r) {
+      var o = {};
+      Object.keys(h).forEach(function (k) {
+        o[k] = r[h[k]];
+      });
+      return o;
+    })
+    .filter(function (o) {
+      return !key || String(o[key] == null ? "" : o[key]).trim() !== "";
     });
-    return o;
-  });
 }
 
 function table_(name) {
@@ -348,7 +372,7 @@ function table_(name) {
 }
 
 function findRow_(sh, col, value) {
-  var last = sh.getLastRow();
+  var last = lastDataRow_(sh);
   if (last < 2 || !value) return 0;
   var hit = sh.getRange(2, col, last - 1, 1).createTextFinder(String(value)).matchEntireCell(true).findNext();
   return hit ? hit.getRow() : 0;
@@ -358,18 +382,13 @@ function findRow_(sh, col, value) {
 function upsert_(t, keyField, rec) {
   var sh = t.sheet;
   var row = findRow_(sh, t.h[keyField] + 1, rec[keyField]);
-  var arr;
-  if (row) {
-    arr = sh.getRange(row, 1, 1, t.width).getValues()[0];
-    if (norm_(arr[t.h.client_id]) !== norm_(rec.client_id)) return null; // someone else's row
-  } else {
-    arr = [];
-    for (var i = 0; i < t.width; i++) arr.push("");
-  }
+  var target = row || lastDataRow_(sh) + 1;
+  // Start from what's there, so columns the coach added (even checkboxes) keep their values.
+  var arr = sh.getRange(target, 1, 1, t.width).getValues()[0];
+  if (row && norm_(arr[t.h.client_id]) !== norm_(rec.client_id)) return null; // someone else's row
   Object.keys(rec).forEach(function (k) {
     if (k in t.h) arr[t.h[k]] = safe_(rec[k]);
   });
-  var target = row || sh.getLastRow() + 1;
   var range = sh.getRange(target, 1, 1, t.width);
   range.setNumberFormats([t.formats]);
   range.setValues([arr]);
@@ -379,15 +398,14 @@ function upsert_(t, keyField, rec) {
 function appendObjects_(sh, objs) {
   var h = headers_(sh);
   var width = sh.getLastColumn();
-  var rows = objs.map(function (o) {
-    var arr = [];
-    for (var i = 0; i < width; i++) arr.push("");
+  var range = sh.getRange(lastDataRow_(sh) + 1, 1, objs.length, width);
+  var rows = range.getValues();
+  objs.forEach(function (o, r) {
     Object.keys(o).forEach(function (k) {
-      if (k in h) arr[h[k]] = o[k];
+      if (k in h) rows[r][h[k]] = o[k];
     });
-    return arr;
   });
-  sh.getRange(sh.getLastRow() + 1, 1, rows.length, width).setValues(rows);
+  range.setValues(rows);
 }
 
 function settings_() {

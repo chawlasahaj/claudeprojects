@@ -50,7 +50,12 @@ export function makeEnv() {
     setFontWeight() {
       return this;
     }
-    setDataValidation() {
+    // Like real Sheets: a checkbox rule turns every empty cell it covers into FALSE.
+    setDataValidation(rule) {
+      if (rule && rule.checkbox) {
+        for (let r = this.row; r < this.row + this.nr; r++)
+          for (let c = this.col; c < this.col + this.nc; c++) if (this.sh.get(r, c) === "") this.sh.put(r, c, false);
+      }
       return this;
     }
     createTextFinder(text) {
@@ -144,17 +149,19 @@ export function makeEnv() {
   sheets.set("Sheet1", new Sheet("Sheet1"));
 
   const builder = () => ({
+    checkbox: false,
     requireValueInRange() {
       return this;
     },
     requireCheckbox() {
+      this.checkbox = true;
       return this;
     },
     setAllowInvalid() {
       return this;
     },
     build() {
-      return {};
+      return { checkbox: this.checkbox };
     },
   });
 
@@ -183,6 +190,7 @@ export function rowsOf(sheet) {
   const out = [];
   for (let r = 2; r <= sheet.getLastRow(); r++) {
     const vals = sheet.getRange(r, 1, 1, width).getValues()[0];
+    if (vals.every((v) => v === "" || v === false)) continue; // an empty row (unticked checkboxes read FALSE)
     out.push(Object.fromEntries(head.map((h, i) => [h, vals[i]])));
   }
   return out;
