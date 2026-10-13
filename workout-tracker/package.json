@@ -1,0 +1,11 @@
+{
+  "name": "workout-tracker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "e2e": "node tests/e2e.cjs",
+    "e2e:sheet": "node tests/e2e-sheet.mjs",
+    "serve": "npx http-server web -p 4173 -c-1"
+  }
+}
