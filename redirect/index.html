@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Coach Sahaj has moved</title>
+  <script>
+    // The app moved to /coach/. Carry the client's ?u= link across and retire this
+    // address's offline copy (only this one: other github.io sites share the origin).
+    (function () {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) {
+            if (/\/claudeprojects\/$/.test(r.scope)) r.unregister();
+          });
+        });
+      }
+      location.replace("https://chawlasahaj.github.io/coach/" + location.search);
+    })();
+  </script>
+</head>
+<body>
+  <p>Coach Sahaj has moved to <a href="https://chawlasahaj.github.io/coach/">chawlasahaj.github.io/coach</a>.</p>
+</body>
+</html>

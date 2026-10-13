@@ -1,0 +1,33 @@
+# The workout tracker moved to github.com/chawlasahaj/coach. This keeps old
+# chawlasahaj.github.io/claudeprojects/ links working by forwarding them there.
+name: Redirect to coach
+
+on:
+  push:
+    branches: [main]
+    paths: ["redirect/**", ".github/workflows/redirect.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: redirect
+      - id: deployment
+        uses: actions/deploy-pages@v4
