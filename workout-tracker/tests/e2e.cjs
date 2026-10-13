@@ -31,7 +31,7 @@ async function run(name, device) {
   const page = await ctx.newPage();
   // The demo never calls the Sheet; keep these runs offline from Google whatever config.js says.
   await page.route("**/config.js", (route) =>
-    route.fulfill({ contentType: "text/javascript", body: 'export const API_URL = ""; export const APP_NAME = "Coach Saj";' }),
+    route.fulfill({ contentType: "text/javascript", body: 'export const API_URL = ""; export const APP_NAME = "Coach Sahaj";' }),
   );
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));

@@ -73,7 +73,7 @@ try {
   await page.route("**/config.js", (route) =>
     route.fulfill({
       contentType: "text/javascript",
-      body: `export const API_URL = "http://localhost:${SCRIPT}/exec"; export const APP_NAME = "Coach Saj";`,
+      body: `export const API_URL = "http://localhost:${SCRIPT}/exec"; export const APP_NAME = "Coach Sahaj";`,
     }),
   );
 

@@ -1,4 +1,4 @@
-# Coach Saj workout tracker
+# Coach Sahaj workout tracker
 
 A phone and iPad web app for your clients: it shows the next session from your plan, a YouTube video for each exercise, and lets them log kg, reps and RIR for every set. The look follows MacroFactor Workouts.
 
@@ -22,7 +22,7 @@ This repo is public, so no client names, plans or health notes go in it. Those l
 
 ### 1. Make the Sheet
 
-1. Go to [sheets.new](https://sheets.new) and name it something like *Coach Saj · Training*.
+1. Go to [sheets.new](https://sheets.new) and name it something like *Coach Sahaj · Training*.
 2. Open **Extensions → Apps Script**. Delete the sample code, paste in everything from [`apps-script/Code.gs`](apps-script/Code.gs), and save.
 3. Pick **setup** in the function dropdown at the top and press **Run**.
    - Google will ask for permission: **Review permissions** → choose your account → **Advanced** → **Go to … (unsafe)** → **Allow**.
@@ -113,7 +113,7 @@ The body diagram knows these muscles: Chest, Front Delts, Side Delts, Rear Delts
 - **Plan edits** show up the next time the client opens the app.
 - **After editing `Code.gs`:** use **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. Making a *new* deployment changes the URL; editing the existing one keeps it.
 - **App changes:** merge to `main`; the workflow tests and republishes. Phones pick up the new version the next time it's opened, occasionally the time after.
-- **Renaming the app:** change "Coach Saj" in `web/config.js`, `web/index.html` and `web/manifest.webmanifest`.
+- **Renaming the app:** change "Coach Sahaj" in `web/config.js`, `web/index.html` and `web/manifest.webmanifest`.
 - **A link leaks:** clear that client's `token` in Clients and make a new link.
 
 Keep PAR-Q and health declarations out of this Sheet, as the PT practice memo recommends.

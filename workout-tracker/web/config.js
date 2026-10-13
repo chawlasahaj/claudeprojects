@@ -4,4 +4,4 @@
 export const API_URL =
   "https://script.google.com/macros/s/AKfycbxBvSx0rrTj7V_I_qqRNUA8gNQsKtTNjcQMqWuXkC_BKu40qDZAXku-VimO_shP-M5cBw/exec";
 
-export const APP_NAME = "Coach Saj";
+export const APP_NAME = "Coach Sahaj";
