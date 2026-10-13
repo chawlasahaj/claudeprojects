@@ -9,7 +9,7 @@
 |---|---|
 | A web app saved to the home screen, not an App Store app | No store, no install friction. "Add to Home Screen" gives a full-screen app with its own icon. |
 | A Google Sheet as the database, Apps Script as the API | S$0 a month, nothing to maintain, no free-tier pausing, and the coach already lives in spreadsheets. Plans are written there and logs land there. |
-| Cloudflare Pages for hosting | Free and allows commercial use (Vercel's free tier doesn't). Deploys on every push. |
+| GitHub Pages for hosting | Free, no new account, publishes on every push to `main` after the tests pass. Cloudflare Pages is the fallback if commercial-use terms ever matter. |
 | A private link per person, no passwords | Three users. The link is remembered on the device. The data is sets and reps, never health forms. |
 | Offline first | Every set is saved on the device the moment it's ticked and synced when there's signal. A workout survives closing the app. |
 | Sessions in order, not by weekday | A missed day doesn't skip anything. The plan waits for the client. |
@@ -24,7 +24,8 @@
   - home: next session, target-muscle cards, exercise list, estimated time
   - workout: elapsed and rest timers, exercise strip, Video / Info / Warm Up / Note, set table with a Target ⇄ Last toggle and an RIR picker
   - finish summary, history, offline sync, demo mode
-- [ ] **Go live:** deploy the Sheet and Pages (README steps 1–5), then load Mom's plan and the current clients' blocks into the Sheet.
+- [x] **Sheet set up and script deployed.**
+- [ ] **Go live:** turn on GitHub Pages and merge to `main`, test with the Test client, then load Mom's plan and the current clients' blocks.
 - [ ] **2 · Polish from real use:**
   - supersets (C1/C2 pairs)
   - a progress chart per exercise

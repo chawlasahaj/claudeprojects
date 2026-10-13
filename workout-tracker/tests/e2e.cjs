@@ -29,6 +29,10 @@ async function run(name, device) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ ...device, serviceWorkers: "block" });
   const page = await ctx.newPage();
+  // The demo never calls the Sheet; keep these runs offline from Google whatever config.js says.
+  await page.route("**/config.js", (route) =>
+    route.fulfill({ contentType: "text/javascript", body: 'export const API_URL = ""; export const APP_NAME = "Coach Saj";' }),
+  );
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
   page.on("console", (m) => m.type() === "error" && !/Failed to load resource|ERR_|net::/.test(m.text()) && errors.push(m.text()));

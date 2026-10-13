@@ -4,7 +4,7 @@ A phone and iPad web app for your clients: it shows the next session from your p
 
 You write plans in a Google Sheet. Everything clients log lands back in that Sheet. Running it costs nothing.
 
-**Try it first:** once the app is hosted (step 3), open `https://<your-site>/?u=demo`. Locally, run `npm run serve` and open <http://localhost:4173/?u=demo>. The demo saves only on that device.
+**Try it first:** open <https://chawlasahaj.github.io/claudeprojects/?u=demo> once it's published (step 3). Locally, run `npm run serve` and open <http://localhost:4173/?u=demo>. The demo saves only on that device.
 
 ```
 workout-tracker/
@@ -34,23 +34,22 @@ This repo is public, so no client names, plans or health notes go in it. Those l
 1. In Apps Script: **Deploy → New deployment**. Click the gear and choose **Web app**.
 2. Set **Execute as: Me** and **Who has access: Anyone**, then press **Deploy**.
 3. Copy the **Web app URL** (it ends in `/exec`).
-4. Put it in [`web/config.js`](web/config.js) as `API_URL`, or send it to me to commit.
+4. Put it in [`web/config.js`](web/config.js) as `API_URL`. (Done: this Sheet's URL is already in there.)
 
 "Anyone" means anyone holding that URL can call the script. They still need a client's private link to read or write anything.
 
-### 3. Host the app (Cloudflare Pages, free)
+### 3. Host the app (GitHub Pages, free)
 
-1. Sign up at [dash.cloudflare.com](https://dash.cloudflare.com). The free plan is fine and, unlike Vercel's free tier, allows commercial use.
-2. Go to **Workers & Pages → Create → Pages → Connect to Git** and pick `chawlasahaj/claudeprojects`.
-3. Settings:
-   - Production branch: `main`
-   - Build command: *(leave empty)*
-   - Build output directory: `workout-tracker/web`
-4. Deploy. You get an address like `https://coach-saj.pages.dev`. Every push to `main` redeploys it.
+The repo already has a workflow (`.github/workflows/workout-tracker.yml`) that tests the app and publishes `workout-tracker/web` on every push to `main`.
 
-The dashboard wording changes from time to time. The two settings that matter are no build command and that output folder.
+1. In the repo on GitHub, open **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions**. That's the only setting.
+2. Merge the code into `main`. The **Actions** tab shows the publish. It takes about a minute.
+3. The app is at **https://chawlasahaj.github.io/claudeprojects/**, and `…/claudeprojects/?u=demo` is the demo.
+4. In the Sheet's **Settings** tab, put `https://chawlasahaj.github.io/claudeprojects/` in `app_url`.
 
-5. In the Sheet's **Settings** tab, put that address in `app_url`.
+If the first publish ran before Pages was switched on, it will have failed. Open **Actions → Workout tracker → Run workflow** to run it again.
+
+GitHub says Pages isn't meant to run a business; a free tool for a few people is a grey area rather than a clear breach. To move later, Cloudflare Pages is free and allows commercial use: connect this repo with no build command and output directory `workout-tracker/web`, then update `app_url` and resend the links. Nothing in the Sheet changes.
 
 ### 4. Add a client and send their link
 
@@ -113,7 +112,7 @@ The body diagram knows these muscles: Chest, Front Delts, Side Delts, Rear Delts
 
 - **Plan edits** show up the next time the client opens the app.
 - **After editing `Code.gs`:** use **Deploy → Manage deployments → ✏️ → Version: New version → Deploy**. Making a *new* deployment changes the URL; editing the existing one keeps it.
-- **App changes:** push to `main`. Phones pick up the new version the next time it's opened, occasionally the time after.
+- **App changes:** merge to `main`; the workflow tests and republishes. Phones pick up the new version the next time it's opened, occasionally the time after.
 - **Renaming the app:** change "Coach Saj" in `web/config.js`, `web/index.html` and `web/manifest.webmanifest`.
 - **A link leaks:** clear that client's `token` in Clients and make a new link.
 
