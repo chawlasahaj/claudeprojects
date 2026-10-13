@@ -1,5 +1,5 @@
-# The workout tracker moved to github.com/chawlasahaj/coach. This keeps old
-# chawlasahaj.github.io/claudeprojects/ links working by forwarding them there.
+# The workout tracker moved to its own repo, coach. This keeps old
+# <username>.github.io/claudeprojects/ links working by forwarding them to /coach/.
 name: Redirect to coach
 
 on:
