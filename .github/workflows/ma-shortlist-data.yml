@@ -51,9 +51,11 @@ jobs:
         env:
           DATA_GOV_SG_API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
 
+      # Stops after 30 minutes so the build and commit always run; the next run carries on.
       - name: Place new postal codes on the map
         continue-on-error: true
-        run: node scripts/geocode.mjs
+        timeout-minutes: 35
+        run: node scripts/geocode.mjs --max-minutes 30
 
       - name: Build the site data
         run: node scripts/build-data.mjs
@@ -68,4 +70,6 @@ jobs:
             exit 0
           fi
           git commit -m "Refresh MA Shortlist data from data.gov.sg"
-          git push
+          # Someone may have pushed while this ran; data files are only written here.
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"

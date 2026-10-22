@@ -1,7 +1,9 @@
 // Looks up the coordinates of each MCST's postal code with OneMap's public search and caches
 // them in data/geocode-cache.json, so later runs only look up new postal codes.
 //
-//   node scripts/geocode.mjs [--data <dir>] [--limit N] [--retry-missing]
+//   node scripts/geocode.mjs [--data <dir>] [--limit N] [--max-minutes N] [--retry-missing]
+//
+// --max-minutes stops cleanly when time is up; the next run carries on from the cache.
 
 import path from "node:path";
 import { ROOT, parseArgs, readJson, writeJson, fetchRetry, sleep } from "./lib/io.mjs";
@@ -12,7 +14,7 @@ const PAUSE_MS = 300;
 
 export async function lookup(postal) {
   const url = `https://www.onemap.gov.sg/api/common/elastic/search?searchVal=${postal}&returnGeom=Y&getAddrDetails=Y&pageNum=1`;
-  const j = await (await fetchRetry(url)).json();
+  const j = await (await fetchRetry(url, {}, 3)).json();
   const results = j?.results ?? [];
   const hit = results.find((r) => r.POSTAL === postal) ?? null;
   if (!hit) return null;
@@ -33,14 +35,26 @@ async function main() {
   const limit = Number(args.limit ?? Infinity);
   console.log(`${postals.length} postal codes, ${todo.length} to look up`);
 
+  const budgetMs = Number(args["max-minutes"] ?? Infinity) * 60000;
+  const started = Date.now();
   let done = 0;
   let found = 0;
+  let failedInARow = 0;
   for (const p of todo.slice(0, limit)) {
+    if (Date.now() - started > budgetMs) {
+      console.log(`Out of time after ${args["max-minutes"]} minutes; ${todo.length - done} left for the next run.`);
+      break;
+    }
     try {
       cache[p] = await lookup(p);
       if (cache[p]) found++;
+      failedInARow = 0;
     } catch (e) {
       console.warn(`${p}: ${e.message}`);
+      if (++failedInARow >= 20) {
+        console.warn("20 lookups failed in a row; OneMap may be down. Stopping until the next run.");
+        break;
+      }
     }
     if (++done % 100 === 0) {
       writeJson(cacheFile, sortKeys(cache), { pretty: false });
