@@ -136,8 +136,8 @@ function start() {
     if (!target) return;
     const current = target.currentFirm ? firmById.get(target.currentFirm) : null;
     const d = postalDistrict(target.postal);
-    const sizeOption = $('#o-size [value="similar"]');
-    sizeOption.textContent = target.lots ? `Similar size to ours (${sizeRange(target.lots).join("–")} lots)` : "Similar size to ours (size unknown)";
+    // The range goes under the select: in the option text it gets cut off on wide screens.
+    $("#size-hint").textContent = target.lots ? `Similar size: ${sizeRange(target.lots).join("–")} strata lots` : "Your size isn't known, so every size counts";
     $("#o-size").disabled = !target.lots;
     $("#o-size").value = target.lots ? opts.size : "any";
     const sameSize = !!target.lots && opts.size === "similar";
