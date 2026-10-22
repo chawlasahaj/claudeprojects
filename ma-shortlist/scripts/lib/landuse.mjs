@@ -42,8 +42,10 @@ export function nameUse(name) {
 export function classify(name, zone) {
   const fromZone = zone ? (zoneUse(zone.lu) ?? zoneUse(zone.near)) : null;
   const fromName = nameUse(name);
-  if (fromZone === "home" || fromZone === "industrial") return { use: fromZone, by: "zone" };
-  // Condos on commercial land, and towers on mixed-use land, go by their name.
+  if (fromZone === "home") return { use: "home", by: "zone" };
+  // A name like "Residences" or "Condominium" keeps a development with homes, whatever the land
+  // around its map point is zoned for; offices and towers on mixed-use land go by their name too.
+  if (fromZone === "industrial") return { use: fromName === "home" ? "home" : "industrial", by: "zone" };
   if (fromZone === "commercial") return { use: fromName === "home" ? "mixed" : "commercial", by: "zone" };
   if (fromZone === "mixed") return { use: fromName === "home" || fromName === "commercial" ? fromName : "mixed", by: "zone" };
   return fromName ? { use: fromName, by: "name" } : { use: null, by: null };

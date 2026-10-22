@@ -2,7 +2,6 @@
 // explains each signal; keep the two in step.
 
 import { between, postalDistrict } from "./geo.js";
-import { GROUPS, inGroup, groupCount } from "./use.js";
 
 export const WEIGHTS = { nearby: 35, similar: 15, retention: 20, accredited: 15, scale: 15 };
 export const SIGNAL_LABELS = {
@@ -21,6 +20,7 @@ export const MIN_PORTFOLIO = 3;
 const logScore = (n, full) => Math.min(1, Math.log1p(n) / Math.log1p(full));
 
 // Similar size: within half to double the target's strata lots.
+export const sizeRange = (target) => [Math.ceil(target / 2), target * 2];
 export function similarSize(lots, target) {
   return lots != null && target != null && lots >= target / 2 && lots <= target * 2;
 }
@@ -54,14 +54,14 @@ export function historyDays(history) {
 
 /**
  * @param target  { lat, lng, postal, lots, currentFirm }
- * @param mcsts   [{ key, name, postal, lat, lng, lots, firm, use }]
- * @param firms   [{ id, name, count, byUse, accredited, history: { startCount, gained, lost } | null }]
+ * @param mcsts   [{ key, name, postal, lat, lng, lots, firm }]
+ * @param firms   [{ id, name, count, accredited, history: { startCount, gained, lost } | null }]
  * @param opts    { radiusKm, preference, accreditationComplete, history: { since, until }, limit, excludeCurrent,
- *                  group: "home" | "commercial" | "industrial" | "all" (which developments count; default all) }
+ *                  sameSize: count only developments of a similar size to the target (needs target.lots) }
  */
 export function shortlist(target, mcsts, firms, opts = {}) {
   const radiusKm = opts.radiusKm ?? 3;
-  const group = GROUPS[opts.group] ? opts.group : "all";
+  const sameSize = !!opts.sameSize && !!target.lots;
   const limit = opts.limit ?? 6;
   const useRetention = historyDays(opts.history) >= MIN_HISTORY_DAYS;
   const useAccreditation = !!opts.accreditationComplete;
@@ -70,27 +70,30 @@ export function shortlist(target, mcsts, firms, opts = {}) {
 
   const byFirm = new Map();
   for (const m of mcsts) {
-    if (!m.firm || m.key === target.key || !inGroup(m.use, group)) continue;
+    if (!m.firm || m.key === target.key) continue;
     if (!byFirm.has(m.firm)) byFirm.set(m.firm, { nearby: [], similar: 0 });
     const agg = byFirm.get(m.firm);
+    const similar = similarSize(m.lots, target.lots);
+    if (similar) agg.similar++;
+    if (sameSize && !similar) continue;
     const km = hasCoords ? between(target, m) : null;
     // Without coordinates on either side, the same postal district counts as nearby.
     const close = km != null ? km <= radiusKm : targetDistrict != null && postalDistrict(m.postal) === targetDistrict;
     if (close) agg.nearby.push({ ...m, km });
-    if (similarSize(m.lots, target.lots)) agg.similar++;
   }
 
   const results = [];
   for (const firm of firms) {
     const isCurrent = firm.id === target.currentFirm;
     if (opts.excludeCurrent !== false && isCurrent) continue;
-    const count = groupCount(firm, group);
-    if (!count || (count < (opts.minPortfolio ?? MIN_PORTFOLIO) && !isCurrent)) continue;
     const agg = byFirm.get(firm.id) ?? { nearby: [], similar: 0 };
+    // With "similar size only", the firm is judged on its developments of that size alone.
+    const count = sameSize ? agg.similar : firm.count;
+    if (!count || (count < (opts.minPortfolio ?? MIN_PORTFOLIO) && !isCurrent)) continue;
     agg.nearby.sort((a, b) => (a.km ?? 99) - (b.km ?? 99));
     const signals = {
       nearby: logScore(agg.nearby.length, 10),
-      similar: target.lots ? logScore(agg.similar, 10) : null,
+      similar: target.lots && !sameSize ? logScore(agg.similar, 10) : null,
       retention: useRetention ? retentionScore(firm.history) : null,
       accredited: useAccreditation ? (firm.accredited ? 1 : 0) : null,
       scale: scaleScore(count, opts.preference),
@@ -107,7 +110,7 @@ export function shortlist(target, mcsts, firms, opts = {}) {
   }
 
   results.sort((a, b) => b.score - a.score || b.nearby.length - a.nearby.length || b.count - a.count);
-  return results.slice(0, limit).map((r) => ({ ...r, reasons: reasons(r, target, { radiusKm, useRetention, history: opts.history, hasCoords, group }) }));
+  return results.slice(0, limit).map((r) => ({ ...r, reasons: reasons(r, target, { radiusKm, useRetention, history: opts.history, hasCoords, sameSize }) }));
 }
 
 const fmtMonth = (iso) => new Date(iso).toLocaleDateString("en-SG", { month: "short", year: "numeric" });
@@ -116,8 +119,7 @@ const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 export function reasons(r, target, ctx) {
   const out = [];
   const { firm, nearby, similarCount } = r;
-  const group = ctx.group ?? "all";
-  const noun = GROUPS[group].noun;
+  const noun = ctx.sameSize ? "similar-size condo" : "condo";
   const where = ctx.hasCoords ? `within ${ctx.radiusKm} km` : "in your postal district";
   if (nearby.length) {
     const closest = nearby[0];
@@ -126,8 +128,9 @@ export function reasons(r, target, ctx) {
   } else {
     out.push({ tone: "neutral", text: `No ${noun}s ${where}` });
   }
-  if (target.lots && similarCount) {
-    out.push({ tone: "good", text: `${plural(similarCount, noun)} of a similar size (${Math.ceil(target.lots / 2)}–${target.lots * 2} lots)` });
+  if (target.lots && similarCount && !ctx.sameSize) {
+    const [lo, hi] = sizeRange(target.lots);
+    out.push({ tone: "good", text: `${plural(similarCount, "condo")} of a similar size (${lo}–${hi} lots)` });
   }
   const h = firm.history;
   if (ctx.useRetention && h) {
@@ -143,6 +146,6 @@ export function reasons(r, target, ctx) {
   }
   if (firm.accredited) out.push({ tone: "good", text: `AMA (Registered) accredited${firm.accredited.category ? `, Category ${firm.accredited.category}` : ""}` });
   const count = r.count ?? firm.count;
-  out.push({ tone: "neutral", text: group === "all" || count === firm.count ? `Manages ${plural(firm.count, "development")} in total` : `Manages ${plural(count, noun)}, ${firm.count} developments in total` });
+  out.push({ tone: "neutral", text: count === firm.count ? `Manages ${plural(firm.count, "condo")} in total` : `Manages ${plural(count, noun)}, ${firm.count} condos in total` });
   return out;
 }

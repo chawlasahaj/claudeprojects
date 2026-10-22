@@ -57,7 +57,11 @@ export function normaliseRow(raw, map) {
   const isSub = sub !== "" && !/^(0|-|nil|na)$/i.test(sub);
   const ma = get("ma");
   const lots = parseInt(get("lots").replace(/[^0-9]/g, ""), 10);
-  const postal = get("postal").replace(/[^0-9]/g, "").padStart(6, "0");
+  // BCA's postal code column is the MCST's correspondence address, often its managing agent's
+  // office. The development's own postal code ends its address: "557 UPPER THOMSON ROAD 574418".
+  const location = get("address");
+  const ownPostal = /(?:^|\D)(\d{5,6})\s*$/.exec(location)?.[1];
+  const postal = (ownPostal ?? get("postal").replace(/[^0-9]/g, "")).padStart(6, "0");
   return {
     key: isSub ? `${mcst}-${sub}` : mcst,
     mcst,
@@ -65,7 +69,7 @@ export function normaliseRow(raw, map) {
     type: get("type"),
     uen: get("uen"),
     name: get("name"),
-    address: get("address") || [[get("houseNo"), get("road")].filter(Boolean).join(" "), get("building")].filter(Boolean).join(", "),
+    address: location || [[get("houseNo"), get("road")].filter(Boolean).join(" "), get("building")].filter(Boolean).join(", "),
     postal: /^0+$/.test(postal) ? "" : postal,
     tel: get("tel"),
     status: get("status"),
