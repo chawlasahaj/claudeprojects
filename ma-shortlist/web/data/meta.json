@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-10-22T07:04:10.975Z",
+  "builtAt": "2026-10-22T07:07:07.945Z",
   "source": {
     "id": "d_1f9391a2f1476cdaf4f05a8d3a05c257",
     "title": "Management Corporation Strata Title",
@@ -12,15 +12,15 @@
     "mcsts": 3702,
     "firms": 221,
     "noAgent": 848,
-    "located": 3638,
+    "located": 3642,
     "withLots": 3702
   },
   "history": null,
   "accreditation": {
     "source": "https://www.sisv.org.sg/ama-Registered-list.aspx",
-    "checked": null,
-    "complete": false,
-    "listed": 5,
-    "matched": 5
+    "checked": "2026-10-22",
+    "complete": true,
+    "listed": 30,
+    "matched": 29
   }
 }

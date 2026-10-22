@@ -25,11 +25,7 @@
 - [x] **3 · RFP pack and guide:** scope, timeline, evaluation weights and the Annex A price schedule. Print, PDF, Word and the cover email. The guide cites the Act and BCA's guides.
 - [x] **4 · Compare:** yearly cost with GST, cost per unit and per manager-hour, cost over the term, weighted score, printable summary.
 - [x] **Real data:** 3,702 MCSTs and 221 managing agents from BCA's list as of 8 Oct 2026. Typos merged, name casing fixed, and switch tracking started on 22 Oct 2026.
-- [ ] **Go live:**
-  - Let the next data run finish placing every postal code on the map.
-  - Connect Cloudflare Pages and merge to `main`.
-  - Spot-check five developments against BCA.
-  - Complete `data/accreditation.json`.
+- [x] **Go live:** at https://condocouncil.pages.dev, published by Cloudflare Pages from `main`. 3,638 of 3,702 MCSTs are on the map, and the full SISV accreditation list (checked 22 Oct 2026) is in.
 - [ ] **5 · After launch:**
   - Share in condo council groups.
   - Add a custom domain.

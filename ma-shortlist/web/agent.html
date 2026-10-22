@@ -36,10 +36,11 @@
       const h = firm.history;
       const mv = firm.moves ?? { in: [], out: [] };
       const acc = meta.accreditation;
+      const phone = firm.accredited?.phone;
       const accText = firm.accredited
-        ? `On the AMA (Registered) list${firm.accredited.category ? `, Category ${esc(firm.accredited.category)}` : ""}.`
+        ? `On the AMA (Registered) list${firm.accredited.category ? `, Category ${esc(firm.accredited.category)}` : ""}.${phone ? ` Office: <a href="tel:+65${esc(phone.replace(/\D/g, ""))}">${esc(phone)}</a>, as listed by SISV.` : ""}`
         : acc?.complete
-          ? "Not on the AMA (Registered) list when we last checked."
+          ? `Not on the AMA (Registered) list when we last checked${acc.checked ? ` (${esc(fmtDate(acc.checked))})` : ""}.`
           : `Not on our copy of the AMA (Registered) list, which isn't complete yet. <a href="${esc(acc?.source ?? "https://www.sisv.org.sg/ama-Registered-list.aspx")}" rel="noopener">Check the SISV list</a>.`;
       const devName = (key) => byKey.get(key)?.name ?? `MCST ${key}`;
 

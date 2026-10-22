@@ -143,7 +143,7 @@ test("pipeline on the fixtures: fetch twice, build, check the output", () => {
   const alpha = agents.find((a) => a.id === "alpha-estate-management");
   assert.equal(alpha.count, 7);
   assert.equal(alpha.spellings.length, 2);
-  assert.deepEqual(alpha.accredited, { category: "A" });
+  assert.deepEqual(alpha.accredited, { category: "A", phone: null });
   assert.deepEqual(alpha.history, { startCount: 6, gained: 2, lost: 0, newDevelopments: 0 });
   const bright = agents.find((a) => a.id === "brightway-property-services");
   assert.deepEqual([bright.history.gained, bright.history.lost], [1, 2]);

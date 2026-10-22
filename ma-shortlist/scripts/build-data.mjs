@@ -41,7 +41,7 @@ export function build({ current, history, geocodes, aliases, accreditation }) {
   const unmatchedAccreditation = [];
   for (const a of accreditation.firms ?? []) {
     const f = resolve(a.name);
-    if (f && firms.has(f.id)) accredited.set(f.id, { category: a.category ?? null });
+    if (f && firms.has(f.id)) accredited.set(f.id, { category: a.category ?? null, phone: a.phone ?? null });
     else unmatchedAccreditation.push(a.name);
   }
 
