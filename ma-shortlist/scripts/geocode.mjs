@@ -9,7 +9,9 @@ import path from "node:path";
 import { ROOT, parseArgs, readJson, writeJson, fetchRetry, sleep } from "./lib/io.mjs";
 import { isActive, isSubMc } from "./lib/rows.mjs";
 
-// OneMap allows about 250 calls a minute.
+// OneMap allows about 250 calls a minute. Each lookup takes about a second, so four at a
+// time with a short pause each comes to roughly 150 a minute.
+const WORKERS = 4;
 const PAUSE_MS = 300;
 
 export async function lookup(postal) {
@@ -37,31 +39,36 @@ async function main() {
 
   const budgetMs = Number(args["max-minutes"] ?? Infinity) * 60000;
   const started = Date.now();
+  const queue = todo.slice(0, limit);
   let done = 0;
   let found = 0;
   let failedInARow = 0;
-  for (const p of todo.slice(0, limit)) {
-    if (Date.now() - started > budgetMs) {
-      console.log(`Out of time after ${args["max-minutes"]} minutes; ${todo.length - done} left for the next run.`);
-      break;
-    }
-    try {
-      cache[p] = await lookup(p);
-      if (cache[p]) found++;
-      failedInARow = 0;
-    } catch (e) {
-      console.warn(`${p}: ${e.message}`);
-      if (++failedInARow >= 20) {
-        console.warn("20 lookups failed in a row; OneMap may be down. Stopping until the next run.");
+  let stop = "";
+
+  async function worker() {
+    while (queue.length && !stop) {
+      if (Date.now() - started > budgetMs) {
+        stop = `Out of time after ${args["max-minutes"]} minutes`;
         break;
       }
+      const p = queue.shift();
+      try {
+        cache[p] = await lookup(p);
+        if (cache[p]) found++;
+        failedInARow = 0;
+      } catch (e) {
+        console.warn(`${p}: ${e.message}`);
+        if (++failedInARow >= 20) stop = "20 lookups failed in a row; OneMap may be down";
+      }
+      if (++done % 100 === 0) {
+        writeJson(cacheFile, sortKeys(cache), { pretty: false });
+        console.log(`  ${done}/${todo.length}`);
+      }
+      await sleep(PAUSE_MS);
     }
-    if (++done % 100 === 0) {
-      writeJson(cacheFile, sortKeys(cache), { pretty: false });
-      console.log(`  ${done}/${todo.length}`);
-    }
-    await sleep(PAUSE_MS);
   }
+  await Promise.all(Array.from({ length: WORKERS }, worker));
+  if (stop) console.log(`${stop}; ${todo.length - done} left for the next run.`);
   writeJson(cacheFile, sortKeys(cache), { pretty: false });
   const missing = postals.filter((p) => !cache[p]).length;
   console.log(`Looked up ${done}, found ${found}. Postal codes without coordinates: ${missing}`);

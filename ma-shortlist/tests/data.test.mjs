@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { parseCsv, csvToObjects } from "../scripts/lib/csv.mjs";
 import { mapColumns, normaliseRow, normaliseTable, isActive, isSubMc } from "../scripts/lib/rows.mjs";
-import { firmKey, displayName, makeResolver } from "../scripts/lib/firms.mjs";
+import { firmKey, displayName, makeResolver, looksLikeFirm } from "../scripts/lib/firms.mjs";
 import { diffHistory } from "../scripts/lib/history.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -65,14 +65,42 @@ test("firm names: spellings collapse to one key and display nicely", () => {
   assert.equal(displayName("CBRE PTE LTD"), "CBRE Pte Ltd");
   assert.equal(displayName("KNIGHT FRANK PROPERTY & FACILITIES MANAGEMENT PTE LTD"), "Knight Frank Property & Facilities Management Pte Ltd");
   assert.equal(displayName("Already Mixed Case Ltd"), "Already Mixed Case Ltd");
+  // Names from BCA's real list.
+  assert.equal(displayName("SG MANAGING AGENT PTE.LTD."), "SG Managing Agent Pte.Ltd.");
+  assert.equal(displayName("THE LOCK MANAGEMENT SERVICES PTE LTD"), "The Lock Management Services Pte Ltd");
+  assert.equal(displayName("D'PROMAN & CO. PTE LTD"), "D'Proman & Co. Pte Ltd");
+  assert.equal(displayName("HOE-TAN CO (PTE) LTD"), "Hoe-Tan Co (Pte) Ltd");
+  assert.equal(displayName("SMART PROPERTY MANAGEMENT (SINGAPORE) PTE LTD"), "Smart Property Management (Singapore) Pte Ltd");
+  assert.equal(displayName("360 INTEGRATED FM & SM PTE LTD"), "360 Integrated FM & SM Pte Ltd");
+  assert.equal(displayName("CWL FACILITIES MANAGEMENT PTE LTD"), "CWL Facilities Management Pte Ltd");
+  assert.equal(firmKey("SMART PROPERTY MANAGEMENT (S) PTE LTD"), firmKey("Smart Property Management (Singapore) Pte Ltd"));
+});
+
+test("people's names, MCST and placeholders aren't managing agents", () => {
+  const resolve = makeResolver({});
+  for (const n of ["MCST", "N", "n", "GAN BOON SIONG", "MS CATHERINE", "MDM MOH TAI HO"]) {
+    assert.equal(looksLikeFirm(n), false, n);
+    assert.equal(resolve(n), null, n);
+  }
+  for (const n of ["CBRE PTE LTD", "A & L PROPERTY SERVICES", "DZ INNOVATIONS", "BK TAN CONSULTANTS", "IMANAGE MCST SERVICES PTE LTD"]) {
+    assert.ok(looksLikeFirm(n), n);
+  }
+});
+
+test("display name: BCA's mixed-case spelling of the same name beats our casing", async () => {
+  const { nameFor } = await import("../scripts/build-data.mjs");
+  assert.equal(nameFor(["JONES LANG LASALLE PTE LTD", "Jones Lang LaSalle Pte Ltd"]), "Jones Lang LaSalle Pte Ltd");
+  // A mixed-case typo isn't preferred over the common spelling.
+  assert.equal(nameFor(["PROPERTY FACILITY SERVICES PTE LTD", "Property Facility Serivces Pte Ltd"]), "Property Facility Services Pte Ltd");
+  assert.equal(nameFor(["Ocean IFM Pte. Ltd.", "OCEAN IFM PTE LTD"]), "Ocean IFM Pte. Ltd.");
 });
 
 test("aliases: merges follow chains, notFirm values resolve to nothing", () => {
   const resolve = makeResolver({ merge: { "OLD NAME PTE LTD": "MIDDLE NAME", "MIDDLE NAME": "NEW NAME PTE LTD" }, notFirm: ["Developer"] });
   assert.equal(resolve("Old Name Pte. Ltd.").id, "new-name");
   assert.equal(resolve("DEVELOPER"), null);
-  const loop = makeResolver({ merge: { A: "B", B: "A" } });
-  assert.ok(loop("A").id);
+  const loop = makeResolver({ merge: { "A PTE LTD": "B PTE LTD", "B PTE LTD": "A PTE LTD" } });
+  assert.ok(loop("A PTE LTD").id);
 });
 
 test("history: switches count, renames and new or terminated developments don't", () => {

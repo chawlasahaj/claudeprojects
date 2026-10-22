@@ -37,15 +37,6 @@ jobs:
           node-version: 22
       - run: npm test
 
-      # BCA also publishes an older "MCST information" dataset. On the very first run it is
-      # saved as the starting point for spotting switches, if its date is earlier than today.
-      - name: Seed history from the older dataset
-        if: hashFiles('ma-shortlist/data/history/*.json') == ''
-        continue-on-error: true
-        run: node scripts/fetch-mcst.mjs --history-only --dataset d_f988c57e16e99ad3a649aa04572efd1c
-        env:
-          DATA_GOV_SG_API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
-
       - name: Download BCA's list of MCSTs
         run: node scripts/fetch-mcst.mjs
         env:

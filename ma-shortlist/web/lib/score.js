@@ -13,6 +13,9 @@ export const SIGNAL_LABELS = {
 };
 // Retention only counts once the history covers at least this long.
 export const MIN_HISTORY_DAYS = 90;
+// Firms managing fewer developments aren't suggested: many are developers or owners running
+// their own building. They still appear in the directory.
+export const MIN_PORTFOLIO = 3;
 
 const logScore = (n, full) => Math.min(1, Math.log1p(n) / Math.log1p(full));
 
@@ -76,8 +79,9 @@ export function shortlist(target, mcsts, firms, opts = {}) {
 
   const results = [];
   for (const firm of firms) {
-    if (opts.excludeCurrent !== false && firm.id === target.currentFirm) continue;
-    if (!firm.count) continue;
+    const isCurrent = firm.id === target.currentFirm;
+    if (opts.excludeCurrent !== false && isCurrent) continue;
+    if (!firm.count || (firm.count < (opts.minPortfolio ?? MIN_PORTFOLIO) && !isCurrent)) continue;
     const agg = byFirm.get(firm.id) ?? { nearby: [], similar: 0 };
     agg.nearby.sort((a, b) => (a.km ?? 99) - (b.km ?? 99));
     const signals = {

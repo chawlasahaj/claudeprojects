@@ -48,8 +48,9 @@ const mcsts = [
 const firms = [
   { id: "near", name: "Near Co", count: 3, history: { startCount: 3, gained: 0, lost: 0 }, accredited: null },
   { id: "far", name: "Far Co", count: 3, history: { startCount: 4, gained: 0, lost: 1 }, accredited: { category: "A" } },
-  { id: "current", name: "Current Co", count: 2, history: null, accredited: null },
-  { id: "nocoords", name: "No Coords Co", count: 1, history: null, accredited: null },
+  { id: "current", name: "Current Co", count: 3, history: null, accredited: null },
+  { id: "nocoords", name: "No Coords Co", count: 3, history: null, accredited: null },
+  { id: "tiny", name: "Tiny Co", count: 2, history: null, accredited: null },
   { id: "empty", name: "Empty Co", count: 0, history: null, accredited: null },
 ];
 const target = { key: "x", lat: 1.32, lng: 103.80, postal: "259010", lots: 300, currentFirm: "current" };
@@ -79,6 +80,14 @@ test("shortlist: retention and accreditation only count when the data allows", (
   // History shorter than 90 days is ignored.
   const short = shortlist(target, mcsts, firms, { history: { since: "2026-06-01", until: "2026-07-01" } });
   assert.equal(short[0].signals.retention, null);
+});
+
+test("shortlist: firms with fewer than 3 developments aren't suggested, unless they're the current agent", () => {
+  const withTiny = [...mcsts, M("10", "tiny", 1.3200, 103.8000, 300), M("11", "tiny", 1.3201, 103.8001, 300)];
+  assert.ok(!shortlist(target, withTiny, firms, {}).some((x) => x.firm.id === "tiny"));
+  assert.ok(shortlist(target, withTiny, firms, { minPortfolio: 1 }).some((x) => x.firm.id === "tiny"));
+  const tinyIsCurrent = shortlist({ ...target, currentFirm: "tiny" }, withTiny, firms, { excludeCurrent: false });
+  assert.ok(tinyIsCurrent.some((x) => x.firm.id === "tiny"));
 });
 
 test("shortlist: can include the current agent, and works without coordinates", () => {

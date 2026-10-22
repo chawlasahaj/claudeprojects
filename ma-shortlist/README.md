@@ -30,7 +30,11 @@ ma-shortlist/
 - **[OneMap](https://www.onemap.gov.sg/)**, for the coordinates of each postal code.
 - **SISV's [AMA (Registered) list](https://www.sisv.org.sg/ama-Registered-list.aspx)**, copied by hand into `data/accreditation.json`.
 
-The **MA Shortlist data** workflow (`.github/workflows/ma-shortlist-data.yml`) refreshes everything on the 2nd of every month and commits the result. It also runs when the scripts or the two files you edit change. Every refresh saves who manages each MCST. Comparing those records over time shows which developments switched agent. Switches only count in the shortlist once there are three months of records.
+The **MA Shortlist data** workflow (`.github/workflows/ma-shortlist-data.yml`) refreshes everything on the 2nd of every month and commits the result. It also runs when the scripts or the two files you edit change. Every refresh saves who manages each MCST. Comparing those records over time shows which developments switched agent. Records start on 22 October 2026, because BCA's older dataset can't be read through the API. Switches only count in the shortlist once there are three months of records.
+
+Placing postal codes on the map with OneMap takes about a second each, so each run stops after 30 minutes and the next run carries on. Until a development is placed, "nearby" falls back to the same postal district.
+
+Names with no business word in them are not shown as managing agents. This covers people's names, "MCST" (self-managed) and placeholders like "N". Only firms with 3 or more developments are suggested in a shortlist, but every firm is listed under Agents.
 
 ## Going live on Cloudflare Pages (free, about 10 minutes)
 

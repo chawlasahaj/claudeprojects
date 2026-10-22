@@ -15,6 +15,8 @@
 | Strata lots from BCA's data for size matching | The dataset has them, so "similar size" works from day one. |
 | Switches counted only after 3 months of records, and only between snapshots that share MCST numbers | A firm that only changed the spelling of its name, or a snapshot in a different format, must not look like lost clients. |
 | Accreditation counts in the score only once the copied list is complete | A partial list would mark down accredited firms we missed. |
+| People's names, "MCST" and placeholders in BCA's agent column are dropped | They aren't firms, and showing individuals' names would be a privacy problem. |
+| Only firms with 3+ developments are suggested | Many one- or two-building names are developers, owners or hotels running their own building. |
 
 ## Phases
 
@@ -22,8 +24,9 @@
 - [x] **2 · Shortlist:** search by name or postal code, or enter a postal code and size. Reasons for each suggestion, nearby developments as references, picks carried into the RFP.
 - [x] **3 · RFP pack and guide:** scope, timeline, evaluation weights and the Annex A price schedule. Print, PDF, Word and the cover email. The guide cites the Act and BCA's guides.
 - [x] **4 · Compare:** yearly cost with GST, cost per unit and per manager-hour, cost over the term, weighted score, printable summary.
+- [x] **Real data:** 3,702 MCSTs and 221 managing agents from BCA's list as of 8 Oct 2026. Typos merged, name casing fixed, and switch tracking started on 22 Oct 2026.
 - [ ] **Go live:**
-  - Run the data workflow and check the counts and possible duplicates.
+  - Let the next data run finish placing every postal code on the map.
   - Connect Cloudflare Pages and merge to `main`.
   - Spot-check five developments against BCA.
   - Complete `data/accreditation.json`.
@@ -36,5 +39,6 @@
 
 ## Open questions
 
-- Is the older "MCST information" dataset an older snapshot or the same data? The first workflow run seeds history from it if its date is earlier. The build ignores it if its MCST numbers don't line up with today's.
+- BCA's older "MCST information" dataset returns no rows through the API, so there's no baseline. Switches can be shown from about January 2027.
+- BCA leaves the agent blank for 803 developments, 122 of them with 200+ units. Could councils correct these through the site?
 - Should development type (residential, commercial, mixed) be used? BCA's dataset doesn't say.

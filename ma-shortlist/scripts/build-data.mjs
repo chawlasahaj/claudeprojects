@@ -63,7 +63,7 @@ export function build({ current, history, geocodes, aliases, accreditation }) {
       const h = diff?.perFirm[f.id];
       return {
         id: f.id,
-        name: displayOverrides[f.key] ?? displayName(spellings[0][0]),
+        name: displayOverrides[f.key] ?? nameFor(spellings.map(([sp]) => sp)),
         spellings: spellings.map(([s]) => s),
         count: f.count,
         units: f.units,
@@ -104,6 +104,14 @@ export function build({ current, history, geocodes, aliases, accreditation }) {
     mcst: { cols: MCST_COLS, rows: mcsts.map((m) => MCST_COLS.map((c) => m[c] ?? null)) },
     report: { unmatchedAccreditation, nearDuplicates: nearDuplicates(agents), skippedSnapshots: skipped },
   };
+}
+
+// The most common spelling, but if it's in capitals and BCA also has the same name in mixed
+// case ("Jones Lang LaSalle"), use that rather than our guess at the casing.
+export function nameFor(spellings) {
+  const top = spellings[0];
+  if (top !== top.toUpperCase()) return top;
+  return spellings.find((sp) => sp !== sp.toUpperCase() && sp.toUpperCase() === top) ?? displayName(top);
 }
 
 // Firms whose first two words match: candidates for ma-aliases.json "merge".

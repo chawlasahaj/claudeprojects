@@ -76,7 +76,8 @@ async function run(name, device, base) {
   await page.click("#dev-list li >> nth=0");
   await page.waitForSelector(".result");
   const names = await page.$$eval(".result h3 a", (as) => as.map((a) => a.textContent));
-  check(names.length === 4, `four other agents suggested (${names.join(", ")})`);
+  check(names.length === 3, `three other agents suggested (${names.join(", ")})`);
+  check(!names.some((n) => /Evergreen/.test(n)), "a one-development firm isn't suggested");
   check(!names.some((n) => /Alpha/.test(n)), "current agent left out");
   const reasons = await page.textContent("#results");
   check(/within 3 km/.test(reasons), "reasons mention nearby developments");
