@@ -1,20 +1,24 @@
 // Turns BCA's MCST rows into one tidy shape, whatever the column names are this month.
-// The CSV uses names like "MCST No" and "Managing Agent Name"; the API and older
-// versions have used snake_case or prefixed names, so columns are matched loosely.
+// The CSV download uses prefixed names (usr_mcno, mcst_stratalota, managementname), while
+// data.gov.sg's preview shows titles ("MCST No", "Managing Agent Name"), so columns are
+// matched loosely.
 
 const COLUMNS = {
   mcst: ["mcstno", "mcstnumber", "usrmcno", "mcno", "mcst"],
   sub: ["submcstno", "submcno", "submcst"],
   type: ["mctype", "mcsttype"],
-  uen: ["uen"],
+  uen: ["uen", "usrmcstuen", "mcstuen"],
   name: ["developmentname", "development", "devtname", "mcstdevtname", "mcstname"],
   address: ["developmentlocation", "address", "mcstaddress", "location", "devtlocation"],
   postal: ["postalcode", "mcstpostalcode", "postal", "postcode"],
   tel: ["mccontactno", "managementtelno", "mgttelno", "mcsttelno", "contactno", "telno"],
   status: ["status", "mcststatus", "mcstatus"],
-  lots: ["stratalots", "noofstratalots", "numberofstratalots", "lots", "units"],
-  ma: ["managingagentname", "managingagent", "maname", "mcstmaname", "managingagentcompany"],
-  constituted: ["dateofmcconstitution", "dateofconstitution", "constitutiondate", "mcconstitutiondate"],
+  lots: ["stratalots", "mcststratalota", "stratalota", "noofstratalots", "numberofstratalots", "lots", "units"],
+  ma: ["managingagentname", "managementname", "managingagent", "maname", "mcstmaname", "managingagentcompany"],
+  houseNo: ["mcsthouseno", "houseno", "blkno"],
+  road: ["mcstroadname", "roadname", "streetname"],
+  building: ["mcstbuildingname", "buildingname"],
+  constituted: ["dateofmcconstitution", "mcformdate", "dateofconstitution", "constitutiondate", "mcconstitutiondate"],
 };
 const REQUIRED = ["mcst", "name", "postal", "ma"];
 
@@ -61,7 +65,7 @@ export function normaliseRow(raw, map) {
     type: get("type"),
     uen: get("uen"),
     name: get("name"),
-    address: get("address"),
+    address: get("address") || [[get("houseNo"), get("road")].filter(Boolean).join(" "), get("building")].filter(Boolean).join(", "),
     postal: /^0+$/.test(postal) ? "" : postal,
     tel: get("tel"),
     status: get("status"),

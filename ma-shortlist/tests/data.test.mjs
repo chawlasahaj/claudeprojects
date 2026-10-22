@@ -30,6 +30,13 @@ test("columns are found under CSV, snake_case and older names", () => {
   assert.equal(snake.lots, "strata_lots");
   const old = mapColumns(["usr_mcno", "mcst_devt_name", "mcst_postalcode", "managing_agent"]);
   assert.equal(old.postal, "mcst_postalcode");
+  // The CSV download as of Oct 2026.
+  const real = mapColumns("usr_mcno|usr_mctype|sub_mcno|usr_mcstuen|usr_devtname|devt_location|mcst_houseno|mcst_roadname|mcst_unitno|mcst_buildingname|mcst_postalcode|mcst_telno|ust_status|mcst_stratalota|managementname|mc_form_date".split("|"));
+  assert.deepEqual(real, {
+    mcst: "usr_mcno", sub: "sub_mcno", type: "usr_mctype", uen: "usr_mcstuen", name: "usr_devtname", address: "devt_location",
+    postal: "mcst_postalcode", tel: "mcst_telno", status: "ust_status", lots: "mcst_stratalota", ma: "managementname", constituted: "mc_form_date",
+    houseNo: "mcst_houseno", road: "mcst_roadname", building: "mcst_buildingname",
+  });
   assert.throws(() => mapColumns(["MCST No", "Development Name"]), /Postal|ma/i);
 });
 

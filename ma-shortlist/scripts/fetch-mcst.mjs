@@ -33,8 +33,10 @@ async function downloadCsv(id) {
   for (let i = 0; i < 20; i++) {
     const j = await getJson(`${base}/poll-download`);
     if (j?.data?.url) {
-      const res = await fetchRetry(j.data.url);
-      return res.text();
+      const buf = Buffer.from(await (await fetchRetry(j.data.url)).arrayBuffer());
+      // Some BCA datasets download as Excel files (a zip, starting "PK"); those go through the datastore API.
+      if (buf.subarray(0, 2).toString() === "PK") throw new Error("the download is an Excel file, not a CSV");
+      return buf.toString("utf8");
     }
     await sleep(3000);
   }
