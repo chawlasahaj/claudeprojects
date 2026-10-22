@@ -1,0 +1,26 @@
+{
+  "builtAt": "2026-10-22T04:39:54.836Z",
+  "source": {
+    "id": "d_1f9391a2f1476cdaf4f05a8d3a05c257",
+    "title": "Management Corporation Strata Title",
+    "url": "https://data.gov.sg/datasets/d_1f9391a2f1476cdaf4f05a8d3a05c257/view",
+    "updated": "2026-10-08T08:01:21+08:00"
+  },
+  "fetchedAt": "2026-10-22",
+  "counts": {
+    "rows": 3826,
+    "mcsts": 3702,
+    "firms": 242,
+    "noAgent": 771,
+    "located": 2057,
+    "withLots": 3702
+  },
+  "history": null,
+  "accreditation": {
+    "source": "https://www.sisv.org.sg/ama-Registered-list.aspx",
+    "checked": null,
+    "complete": false,
+    "listed": 5,
+    "matched": 5
+  }
+}
