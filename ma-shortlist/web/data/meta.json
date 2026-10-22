@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-10-22T12:41:48.134Z",
+  "builtAt": "2026-10-22T12:46:49.154Z",
   "source": {
     "id": "d_1f9391a2f1476cdaf4f05a8d3a05c257",
     "title": "Management Corporation Strata Title",
@@ -9,11 +9,11 @@
   "fetchedAt": "2026-10-22",
   "counts": {
     "rows": 3826,
-    "mcsts": 2993,
-    "firms": 184,
-    "noAgent": 663,
-    "located": 2852,
-    "withLots": 2993
+    "mcsts": 2986,
+    "firms": 183,
+    "noAgent": 659,
+    "located": 2908,
+    "withLots": 2986
   },
   "history": null,
   "landUse": {
@@ -21,11 +21,11 @@
     "dataset": "d_a8c3546b26712e35021f3a681d0353ae",
     "checked": "2026-10-22",
     "types": {
-      "home": 2523,
-      "mixed": 351,
-      "unknown": 119,
-      "commercial": 387,
-      "industrial": 322
+      "home": 2567,
+      "mixed": 355,
+      "unknown": 64,
+      "commercial": 392,
+      "industrial": 324
     }
   },
   "accreditation": {
