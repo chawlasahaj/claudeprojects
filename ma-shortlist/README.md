@@ -48,6 +48,8 @@ Names with no business word in them are not shown as managing agents. This cover
    - Build output directory: `ma-shortlist/web`
 4. **Save and Deploy.** Every push to `main` republishes the site, including the monthly data commits. Other branches get their own preview addresses.
 
+If Cloudflare created a **Worker** instead of a Pages project (its newer "Create" flow does this), the site deploys but shows **"No URLs enabled"**. To fix it, open the Worker, go to **Settings → Domains & Routes**, and enable the **workers.dev** route. The site is then at `https://<worker name>.<your subdomain>.workers.dev`.
+
 ### Adding a custom domain later
 
 Buy a domain: a `.com` costs about US$10 a year at cost from Cloudflare Registrar, and a `.sg` about S$30–60 a year from an SGNIC-accredited registrar. Then open the Pages project → **Custom domains → Set up a domain**. Nothing in the site needs to change, because all its links are relative.
