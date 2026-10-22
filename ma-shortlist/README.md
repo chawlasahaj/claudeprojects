@@ -1,6 +1,6 @@
-# MA Shortlist
+# StrataMatch
 
-**Live at https://condocouncil.pages.dev**
+**Live at https://condocouncil.pages.dev**, moving to https://stratamatch.pages.dev
 
 A free, independent website for MCST councils in Singapore that are changing managing agent (MA). It has three parts:
 
@@ -32,7 +32,7 @@ ma-shortlist/
 - **[OneMap](https://www.onemap.gov.sg/)**, for the coordinates of each postal code.
 - **SISV's [AMA (Registered) list](https://www.sisv.org.sg/ama-Registered-list.aspx)**, copied by hand into `data/accreditation.json`.
 
-The **MA Shortlist data** workflow (`.github/workflows/ma-shortlist-data.yml`) refreshes everything on the 2nd of every month and commits the result. It also runs when the scripts or the two files you edit change. Every refresh saves who manages each MCST. Comparing those records over time shows which developments switched agent. Records start on 22 October 2026, because BCA's older dataset can't be read through the API. Switches only count in the shortlist once there are three months of records.
+The **StrataMatch data** workflow (`.github/workflows/ma-shortlist-data.yml`) refreshes everything on the 2nd of every month and commits the result. It also runs when the scripts or the two files you edit change. Every refresh saves who manages each MCST. Comparing those records over time shows which developments switched agent. Records start on 22 October 2026, because BCA's older dataset can't be read through the API. Switches only count in the shortlist once there are three months of records.
 
 Placing postal codes on the map with OneMap takes about a second each, so each run stops after 30 minutes and the next run carries on. Until a development is placed, "nearby" falls back to the same postal district.
 
@@ -43,7 +43,7 @@ Names with no business word in them are not shown as managing agents. This cover
 1. Make a free account at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up).
 2. Go to **Workers & Pages → Create**, switch to the **Pages** tab, choose **Connect to Git**, and pick the `claudeprojects` repo.
 3. Set up the build:
-   - Project name: `condocouncil`. This gives you `https://condocouncil.pages.dev`.
+   - Project name: `stratamatch`. This gives you `https://stratamatch.pages.dev`.
    - Production branch: `main`
    - Framework preset: **None**
    - Build command: leave empty

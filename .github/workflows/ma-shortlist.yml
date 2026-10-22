@@ -1,6 +1,6 @@
-# Runs MA Shortlist's tests on every push and pull request that touches it.
+# Runs StrataMatch's tests on every push and pull request that touches it.
 # Cloudflare Pages publishes ma-shortlist/web from main by itself; see ma-shortlist/README.md.
-name: MA Shortlist
+name: StrataMatch
 
 on:
   push:
