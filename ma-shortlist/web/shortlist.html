@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en-SG">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shortlist Managing Agents</title>
+  <meta name="description" content="Find managing agents that run developments near your condo and of a similar size.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <h1>Shortlist managing agents</h1>
+    <p class="lede">Pick your development to see 6 agents worth asking for a quote, with the reasons for each. Tick the ones you want to invite.</p>
+
+    <div id="no-data"></div>
+
+    <section class="card" id="finder">
+      <div class="field typeahead">
+        <label for="dev-search">Your development <span class="hint">Search by name or postal code</span></label>
+        <input id="dev-search" type="search" autocomplete="off" placeholder="e.g. The Sail, or 018987" role="combobox" aria-expanded="false" aria-controls="dev-list" aria-autocomplete="list">
+        <ul id="dev-list" role="listbox" hidden></ul>
+      </div>
+      <details id="manual">
+        <summary>Not listed? Enter your postal code and size instead</summary>
+        <form id="manual-form" class="fields" style="margin-top: 12px">
+          <div class="field"><label for="m-postal">Postal code</label><input id="m-postal" type="text" inputmode="numeric" pattern="\d{6}" maxlength="6" required></div>
+          <div class="field"><label for="m-lots">Number of units (strata lots)</label><input id="m-lots" type="number" min="1" inputmode="numeric"></div>
+          <div class="field"><label for="m-current">Current managing agent</label><select id="m-current"><option value="">None or not listed</option></select></div>
+          <div class="field" style="align-self: end"><button class="btn" type="submit">Show the shortlist</button></div>
+        </form>
+      </details>
+    </section>
+
+    <section id="chosen" class="card" hidden></section>
+
+    <section id="options" class="card no-print" hidden>
+      <div class="fields">
+        <div class="field">
+          <label for="o-radius">How near counts as nearby</label>
+          <select id="o-radius"><option value="2">Within 2 km</option><option value="3" selected>Within 3 km</option><option value="5">Within 5 km</option></select>
+        </div>
+        <div class="field">
+          <label for="o-pref">Firm size</label>
+          <select id="o-pref"><option value="any">No preference</option><option value="larger">Prefer larger firms</option><option value="smaller">Prefer small and mid-sized firms</option></select>
+        </div>
+        <div class="field" style="align-self: end">
+          <label class="check"><input id="o-current" type="checkbox"> Include our current agent</label>
+        </div>
+      </div>
+    </section>
+
+    <div id="results"></div>
+    <div id="tray" class="tray no-print" hidden></div>
+  </main>
+  <script type="module" src="shortlist.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "_help": "Fixes for managing agent names in BCA's data. Names are compared after removing Pte/Ltd, punctuation and case, and expanding MGT/MGMT to MANAGEMENT. 'merge' maps one firm to another (renames, odd spellings). 'display' sets the name shown on the site. 'notFirm' lists values that aren't a managing agent. Run npm run build-data to see possible duplicates.",
+  "merge": {},
+  "display": {},
+  "notFirm": ["SELF MANAGED", "SELF MANAGEMENT", "DEVELOPER", "NO MANAGING AGENT", "NIL"]
+}

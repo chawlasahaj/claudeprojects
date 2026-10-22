@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en-SG">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About MA Shortlist</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="wrap narrow prose">
+    <h1>About</h1>
+    <p class="lede">MA Shortlist is a free tool for the councils of condominiums and other strata developments in Singapore. It helps them find managing agents, ask them all for proposals on the same terms, and compare the answers fairly.</p>
+
+    <h2>Independent</h2>
+    <ul>
+      <li>No managing agent pays to be listed, featured or ranked, and we take no commission or referral fees.</li>
+      <li>We are not affiliated with BCA, SISV, APFM, ASM or any managing agent.</li>
+      <li>The shortlist uses only public data, and <a href="methodology.html">how it works</a> is published in full.</li>
+    </ul>
+
+    <h2>Your information stays with you</h2>
+    <p>There are no accounts and no tracking. What you type on the RFP and Compare pages is saved only in this browser on this device, so you can come back to it. Clearing your browser data removes it. Nothing is sent to us or to any managing agent. The site sends anything to an outside service only when you enter a postal code that isn't in BCA's list; then it asks OneMap where that postal code is.</p>
+
+    <h2>Not advice</h2>
+    <p>The guide and templates are practical help, not legal or professional advice. Check the Building (Strata Management) Act, BCA's guides and your own contracts, and get advice where needed.</p>
+
+    <h2 id="corrections">Corrections</h2>
+    <p>If a firm's details look wrong, check BCA's own records first: the data comes from BCA and updates monthly. If the problem is ours, for example two firms merged by mistake or a missing accreditation, please <a href="https://github.com/chawlasahaj/claudeprojects/issues/new?title=MA%20Shortlist%20correction" rel="noopener">open an issue on GitHub</a> with the details.</p>
+
+    <h2>Data credits</h2>
+    <ul class="sources">
+      <li>Contains information from <a href="https://data.gov.sg/datasets/d_1f9391a2f1476cdaf4f05a8d3a05c257/view" rel="noopener">Management Corporation Strata Title</a> (Building and Construction Authority), accessed <span id="accessed">monthly</span> from data.gov.sg, which is made available under the terms of the <a href="https://data.gov.sg/open-data-licence" rel="noopener">Singapore Open Data Licence version 1.0</a>.</li>
+      <li>Postal code locations from <a href="https://www.onemap.gov.sg/" rel="noopener">OneMap</a>, Singapore Land Authority.</li>
+      <li>Accreditation from the <a href="https://www.sisv.org.sg/ama-Registered-list.aspx" rel="noopener">SISV list of Accredited Managing Agents (Registered)</a>.</li>
+    </ul>
+  </main>
+  <script type="module">
+    import { chrome, $, loadMeta, fmtDate } from "./app.js";
+    chrome("");
+    const m = await loadMeta();
+    if (m?.fetchedAt) $("#accessed").textContent = `on ${fmtDate(m.fetchedAt)}`;
+  </script>
+</body>
+</html>

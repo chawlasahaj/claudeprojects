@@ -1,0 +1,19 @@
+{
+  "source": "test",
+  "checked": "2026-10-01",
+  "complete": true,
+  "firms": [
+    {
+      "name": "Alpha Estate Management Pte Ltd",
+      "category": "A"
+    },
+    {
+      "name": "Coral Strata Management",
+      "category": "B"
+    },
+    {
+      "name": "Not In BCA Data Pte Ltd",
+      "category": "A"
+    }
+  ]
+}

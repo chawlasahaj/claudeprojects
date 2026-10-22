@@ -1,0 +1,71 @@
+# Refreshes MA Shortlist's data from BCA's list of MCSTs on data.gov.sg and commits it.
+# Runs on the 2nd of every month, on demand, and whenever the data scripts or the name and
+# accreditation fixes change. It commits to the branch it ran on, so main stays current
+# and Cloudflare Pages republishes the site.
+name: MA Shortlist data
+
+on:
+  schedule:
+    - cron: "17 1 2 * *" # 09:17 in Singapore on the 2nd of each month
+  workflow_dispatch:
+  push:
+    paths:
+      - "ma-shortlist/scripts/**"
+      - "ma-shortlist/data/ma-aliases.json"
+      - "ma-shortlist/data/accreditation.json"
+      - ".github/workflows/ma-shortlist-data.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    concurrency:
+      group: ma-shortlist-data-${{ github.ref }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: ma-shortlist
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm test
+
+      # BCA also publishes an older "MCST information" dataset. On the very first run it is
+      # saved as the starting point for spotting switches, if its date is earlier than today.
+      - name: Seed history from the older dataset
+        if: hashFiles('ma-shortlist/data/history/*.json') == ''
+        continue-on-error: true
+        run: node scripts/fetch-mcst.mjs --history-only --dataset d_f988c57e16e99ad3a649aa04572efd1c
+        env:
+          DATA_GOV_SG_API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
+
+      - name: Download BCA's list of MCSTs
+        run: node scripts/fetch-mcst.mjs
+        env:
+          DATA_GOV_SG_API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
+
+      - name: Place new postal codes on the map
+        continue-on-error: true
+        run: node scripts/geocode.mjs
+
+      - name: Build the site data
+        run: node scripts/build-data.mjs
+
+      - name: Commit any changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data web/data
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git commit -m "Refresh MA Shortlist data from data.gov.sg"
+          git push

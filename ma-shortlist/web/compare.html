@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en-SG">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compare Managing Agent Quotes</title>
+  <meta name="description" content="Put managing agent quotes side by side: yearly cost with GST, cost per unit and per condo-manager hour, and a weighted score.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <div class="no-print">
+      <h1>Compare quotes</h1>
+      <p class="lede">Type in each agent's price schedule (Annex A of the RFP pack) and rate the parts that aren't about price. Everything stays in this browser.</p>
+    </div>
+
+    <section class="card no-print" id="settings">
+      <div class="fields">
+        <div class="field"><label for="units">Units (strata lots)</label><input id="units" type="number" min="1" inputmode="numeric"></div>
+        <div class="field"><label for="meetings">General meetings a year <span class="hint">AGM plus any EGMs you expect</span></label><input id="meetings" type="number" min="0" max="10" value="1"></div>
+      </div>
+      <fieldset><legend>Weights <span class="hint" style="display: inline">Shared with the RFP pack. Must add up to 100.</span></legend><div class="fields" id="weight-fields"></div><p id="weight-sum" class="muted"></p></fieldset>
+    </section>
+
+    <section id="summary" style="margin-top: 20px">
+      <h2 style="margin-top: 0">Side by side</h2>
+      <p class="muted print-only-note"></p>
+      <div class="table-wrap"><table id="results"></table></div>
+      <p class="muted" style="margin-top: 8px">Price score: the cheapest yearly cost gets 100, others get cheapest ÷ theirs × 100. Ratings: 1 = 0, 5 = 100. Costs include 9% GST where the agent charges it.</p>
+    </section>
+
+    <div class="btn-row no-print" style="margin: 16px 0 8px">
+      <button class="btn" type="button" id="print">Print summary</button>
+      <button class="btn secondary" type="button" id="add">Add a quote</button>
+      <button class="btn quiet small" type="button" id="clear">Clear all</button>
+    </div>
+
+    <div id="quotes" class="no-print"></div>
+  </main>
+  <script type="module" src="compare-page.js"></script>
+</body>
+</html>
