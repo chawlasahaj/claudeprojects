@@ -2,7 +2,7 @@
 
 **For:** the councils of condominiums and other strata developments in Singapore that are choosing a managing agent.
 **The problem:** agents are hard to find, quotes come back in different formats, and the process is opaque to owners.
-**What already exists:** [comparemanagingagents.com](https://comparemanagingagents.com/singapore/) has a directory built from the same BCA data, Google ratings and a "request proposals" form. MA Shortlist focuses on what that site doesn't have: a shortlist based on nearby developments of a similar size and on agent switches, a standard RFP, and like-for-like quote comparison.
+**What already exists:** [comparemanagingagents.com](https://comparemanagingagents.com/singapore/) has a directory built from the same BCA data, Google ratings and a "request proposals" form. StrataMatch focuses on what that site doesn't have: a shortlist based on nearby developments of a similar size and on agent switches, a standard RFP, and like-for-like quote comparison.
 
 ## Decisions
 

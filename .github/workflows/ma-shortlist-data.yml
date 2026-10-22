@@ -1,8 +1,8 @@
-# Refreshes MA Shortlist's data from BCA's list of MCSTs on data.gov.sg and commits it.
+# Refreshes StrataMatch's data from BCA's list of MCSTs on data.gov.sg and commits it.
 # Runs on the 2nd of every month, on demand, and whenever the data scripts or the name and
 # accreditation fixes change. It commits to the branch it ran on, so main stays current
 # and Cloudflare Pages republishes the site.
-name: MA Shortlist data
+name: StrataMatch data
 
 on:
   schedule:
@@ -60,7 +60,7 @@ jobs:
             echo "No changes."
             exit 0
           fi
-          git commit -m "Refresh MA Shortlist data from data.gov.sg"
+          git commit -m "Refresh StrataMatch data from data.gov.sg"
           # Someone may have pushed while this ran; data files are only written here.
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin "HEAD:$GITHUB_REF_NAME"

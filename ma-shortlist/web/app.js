@@ -19,7 +19,7 @@ export function chrome(active) {
   const header = document.createElement("header");
   header.className = "site-header";
   header.innerHTML = `<div class="wrap">
-    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">MA</span>MA Shortlist</a>
+    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">SM</span>StrataMatch</a>
     <nav class="site-nav" aria-label="Main">${NAV.map(([id, href, label]) => `<a href="${href}"${id === active ? ' aria-current="page"' : ""}>${label}</a>`).join("")}</nav>
   </div>`;
   document.body.prepend(header);
