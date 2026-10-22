@@ -27,7 +27,7 @@
 - [x] **3 · RFP pack and guide:** scope, timeline, evaluation weights and the Annex A price schedule. Print, PDF, Word and the cover email. The guide cites the Act and BCA's guides.
 - [x] **4 · Compare:** yearly cost with GST, cost per unit and per manager-hour, cost over the term, weighted score, printable summary.
 - [x] **Real data:** 3,702 MCSTs and 221 managing agents from BCA's list as of 8 Oct 2026. Typos merged, name casing fixed, and switch tracking started on 22 Oct 2026.
-- [x] **Go live:** at https://condocouncil.pages.dev, published by Cloudflare Pages from `main`. 3,638 of 3,702 MCSTs are on the map, and the full SISV accreditation list (checked 22 Oct 2026) is in.
+- [x] **Go live:** at https://stratamatch.pages.dev (first launched at condocouncil.pages.dev), published by Cloudflare Pages from `main`. 2,908 of 2,986 condos are on the map, and the full SISV accreditation list (checked 22 Oct 2026) is in.
 - [x] **Feedback 1, "remove office and industrial buildings":** every MCST is typed from URA's Master Plan 2025 land-use zoning, and offices, shops and factories are left out. Developments are now placed by their own postal code, not BCA's correspondence one.
 - [x] **Feedback 2, "similar size to mine":** a shortlist option counts only condos with half to twice your strata lots.
 - [ ] **5 · After launch:**

@@ -1,6 +1,6 @@
 # StrataMatch
 
-**Live at https://condocouncil.pages.dev**, moving to https://stratamatch.pages.dev
+**Live at https://stratamatch.pages.dev**
 
 A free, independent website for condo councils (MCSTs) in Singapore that are changing managing agent (MA). It covers condos only: offices, shops and factories on BCA's list are left out. It has three parts:
 
