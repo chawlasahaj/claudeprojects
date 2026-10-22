@@ -15,6 +15,7 @@
   <script type="module">
     import { chrome, $, esc, loadMeta, loadAgents, loadMcsts, fmtInt, fmtMonth, fmtDate, plural, picks, NO_DATA } from "./app.js";
     import { postalDistrict, districtLabel } from "./lib/geo.js";
+    import { USE_LABELS } from "./lib/use.js";
     chrome("agents");
 
     const id = new URLSearchParams(location.search).get("id");
@@ -43,6 +44,8 @@
           ? `Not on the AMA (Registered) list when we last checked${acc.checked ? ` (${esc(fmtDate(acc.checked))})` : ""}.`
           : `Not on our copy of the AMA (Registered) list, which isn't complete yet. <a href="${esc(acc?.source ?? "https://www.sisv.org.sg/ama-Registered-list.aspx")}" rel="noopener">Check the SISV list</a>.`;
       const devName = (key) => byKey.get(key)?.name ?? `MCST ${key}`;
+      const hasTypes = !!meta.landUse;
+      const types = hasTypes ? Object.entries(firm.byUse ?? {}).filter(([, n]) => n) : [];
 
       body.innerHTML = `
         <div class="btn-row" style="justify-content: space-between; align-items: flex-start">
@@ -59,6 +62,7 @@
         <div class="stats">
           <div class="stat"><b>${fmtInt(firm.count)}</b><span>developments managed</span></div>
           <div class="stat"><b>${fmtInt(firm.units)}</b><span>strata lots in them</span></div>
+          ${types.length ? `<div class="stat"><b>${types.map(([, n]) => fmtInt(n)).join(" · ")}</b><span>${types.map(([u]) => USE_LABELS[u].toLowerCase()).join(" · ")}</span></div>` : ""}
           <div class="stat"><b>${districts.length}</b><span>postal districts</span></div>
           ${h ? `<div class="stat"><b>+${h.gained} / −${h.lost}</b><span>clients won / lost since ${esc(fmtMonth(meta.history.since))}</span></div>` : ""}
         </div>
@@ -82,7 +86,7 @@
         <h2>Developments managed (${fmtInt(own.length)})</h2>
         <div class="field no-print" style="max-width: 360px"><label for="filter">Filter</label><input id="filter" type="search" placeholder="Name or postal code"></div>
         <div class="table-wrap"><table>
-          <thead><tr><th>Development</th><th>MCST</th><th class="num">Lots</th><th>District</th></tr></thead>
+          <thead><tr><th>Development</th>${hasTypes ? "<th>Type</th>" : ""}<th>MCST</th><th class="num">Lots</th><th>District</th></tr></thead>
           <tbody id="devs"></tbody>
         </table></div>
         ${firm.spellings.length > 1 ? `<p class="muted" style="margin-top: 12px">BCA's list spells this firm ${firm.spellings.length} ways: ${firm.spellings.map(esc).join("; ")}.</p>` : ""}`;
@@ -96,7 +100,7 @@
         const q = $("#filter").value.trim().toLowerCase();
         $("#devs").innerHTML = own
           .filter((m) => !q || m.name.toLowerCase().includes(q) || m.postal.includes(q))
-          .map((m) => `<tr><td>${esc(m.name)}<br><small class="muted">${esc(m.address || m.postal)}</small></td><td>${esc(m.mcst)}</td><td class="num">${fmtInt(m.lots)}</td><td>D${String(postalDistrict(m.postal) ?? "–").padStart(2, "0")}</td></tr>`)
+          .map((m) => `<tr><td>${esc(m.name)}<br><small class="muted">${esc(m.address || m.postal)}</small></td>${hasTypes ? `<td>${esc(USE_LABELS[m.use] ?? "–")}</td>` : ""}<td>${esc(m.mcst)}</td><td class="num">${fmtInt(m.lots)}</td><td>D${String(postalDistrict(m.postal) ?? "–").padStart(2, "0")}</td></tr>`)
           .join("");
       };
       $("#filter").addEventListener("input", draw);

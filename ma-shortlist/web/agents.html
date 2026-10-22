@@ -15,6 +15,10 @@
     <div id="no-data"></div>
     <div class="fields no-print" id="controls">
       <div class="field"><label for="q">Search</label><input id="q" type="search" placeholder="Firm name"></div>
+      <div class="field" id="type-field">
+        <label for="type">Developments</label>
+        <select id="type"><option value="all">All types</option><option value="home">Homes</option><option value="commercial">Offices and shops</option><option value="industrial">Industrial</option></select>
+      </div>
       <div class="field">
         <label for="sort">Sort by</label>
         <select id="sort">
@@ -35,6 +39,7 @@
   <script type="module">
     import { chrome, $, esc, loadMeta, loadAgents, fmtInt, fmtMonth, NO_DATA, store } from "./app.js";
     import { districtLabel } from "./lib/geo.js";
+    import { USE_LABELS, groupCount } from "./lib/use.js";
     chrome("agents");
 
     const [meta, agents] = await Promise.all([loadMeta(), loadAgents()]);
@@ -44,39 +49,46 @@
       $("#list").hidden = true;
     } else {
       const hasHistory = !!meta?.history;
+      const hasTypes = !!meta?.landUse;
+      $("#type-field").hidden = !hasTypes;
       $("#intro").textContent = `All ${fmtInt(agents.length)} managing agents named on BCA's list of MCSTs, with how many developments each runs and where. Tap a firm for its full portfolio.`;
-      const state = store.get("agentsView", { q: "", sort: "count", min: "1" });
+      const state = { q: "", sort: "count", min: "1", type: "all", ...store.get("agentsView", {}) };
+      if (!hasTypes) state.type = "all";
       $("#q").value = state.q;
+      $("#type").value = state.type;
       $("#sort").value = state.sort;
       $("#min").value = state.min;
       if (!hasHistory) $("#sort").querySelector('[value="net"]').remove();
 
       const net = (a) => (a.history ? a.history.gained - a.history.lost : 0);
       const topDistricts = (a) => Object.entries(a.districts).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([d]) => districtLabel(Number(d))).join("; ");
+      const split = (a) => Object.entries(a.byUse ?? {}).filter(([, n]) => n).map(([u, n]) => `${fmtInt(n)} ${USE_LABELS[u].toLowerCase()}`).join(" · ");
+      const HEADS = { all: "Developments", home: "Homes", commercial: "Offices, shops", industrial: "Industrial" };
 
       function draw() {
-        Object.assign(state, { q: $("#q").value, sort: $("#sort").value, min: $("#min").value });
+        Object.assign(state, { q: $("#q").value, sort: $("#sort").value, min: $("#min").value, type: $("#type").value });
         store.set("agentsView", state);
         const q = state.q.trim().toLowerCase();
+        const n = (a) => groupCount(a, state.type);
         const rows = agents
-          .filter((a) => a.count >= Number(state.min))
+          .filter((a) => n(a) >= Math.max(1, Number(state.min)))
           .filter((a) => !q || a.name.toLowerCase().includes(q) || a.spellings.some((s) => s.toLowerCase().includes(q)))
           .sort((a, b) =>
             state.sort === "name" ? a.name.localeCompare(b.name)
             : state.sort === "units" ? b.units - a.units
-            : state.sort === "net" ? net(b) - net(a) || b.count - a.count
-            : b.count - a.count);
+            : state.sort === "net" ? net(b) - net(a) || n(b) - n(a)
+            : n(b) - n(a) || b.count - a.count);
         $("#count").textContent = `${fmtInt(rows.length)} firm${rows.length === 1 ? "" : "s"}`;
         $("#list").innerHTML =
-          `<div class="agent-row head"><span>Firm</span><span class="num">Developments</span><span class="num">Strata lots</span><span class="num">${hasHistory ? `Since ${fmtMonth(meta.history.since)}` : "Accredited"}</span></div>` +
+          `<div class="agent-row head"><span>Firm</span><span class="num">${HEADS[state.type]}</span><span class="num">Strata lots</span><span class="num">${hasHistory ? `Since ${fmtMonth(meta.history.since)}` : "Accredited"}</span></div>` +
           rows.map((a) => `<div class="agent-row">
-            <div><a href="agent.html?id=${esc(a.id)}"><b>${esc(a.name)}</b></a> ${a.accredited ? '<span class="badge">AMA</span>' : ""}<br><small class="muted">${esc(topDistricts(a))}</small></div>
-            <div class="num"><b>${fmtInt(a.count)}</b></div>
+            <div><a href="agent.html?id=${esc(a.id)}"><b>${esc(a.name)}</b></a> ${a.accredited ? '<span class="badge">AMA</span>' : ""}<br><small class="muted">${esc(topDistricts(a))}</small>${hasTypes ? `<br><small class="muted">${esc(split(a))}</small>` : ""}</div>
+            <div class="num"><b>${fmtInt(n(a))}</b></div>
             <div class="num hide-sm">${fmtInt(a.units)}</div>
             <div class="num hide-sm">${hasHistory ? (a.history ? `+${a.history.gained} / −${a.history.lost}` : "–") : a.accredited ? "AMA" : "–"}</div>
           </div>`).join("");
       }
-      for (const id of ["q", "sort", "min"]) $(`#${id}`).addEventListener("input", draw);
+      for (const id of ["q", "type", "sort", "min"]) $(`#${id}`).addEventListener("input", draw);
       draw();
     }
   </script>

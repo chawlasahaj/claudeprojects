@@ -1,6 +1,6 @@
 // Builds the JSON the site loads from the saved data:
-//   web/data/mcst.json    every active MCST with its coordinates and managing agent
-//   web/data/agents.json  every managing agent: portfolio, districts, accreditation, switches
+//   web/data/mcst.json    every active MCST with its coordinates, type and managing agent
+//   web/data/agents.json  every managing agent: portfolio, types, districts, accreditation, switches
 //   web/data/meta.json    dates, counts and sources
 //
 //   node scripts/build-data.mjs [--data <dir>] [--out <dir>] [--aliases <file>] [--accreditation <file>]
@@ -11,26 +11,32 @@ import { ROOT, parseArgs, readJson, writeJson } from "./lib/io.mjs";
 import { isActive, isSubMc } from "./lib/rows.mjs";
 import { makeResolver, displayName, firmKey } from "./lib/firms.mjs";
 import { diffHistory } from "./lib/history.mjs";
+import { classify } from "./lib/landuse.mjs";
 import { postalDistrict } from "../web/lib/geo.js";
 
-const MCST_COLS = ["key", "mcst", "name", "address", "postal", "lat", "lng", "lots", "firm", "tel"];
+const MCST_COLS = ["key", "mcst", "name", "address", "postal", "lat", "lng", "lots", "firm", "tel", "use"];
+const USES = ["home", "mixed", "commercial", "industrial"];
 
-export function build({ current, history, geocodes, aliases, accreditation }) {
+export function build({ current, history, geocodes, aliases, accreditation, landuse = {} }) {
   const resolve = makeResolver(aliases);
   const rows = current.rows.filter((r) => isActive(r) && !isSubMc(r));
   const displayOverrides = Object.fromEntries(Object.entries(aliases.display ?? {}).map(([k, v]) => [firmKey(k), v]));
 
   const firms = new Map();
   const mcsts = [];
+  const classifiedBy = { zone: 0, name: 0 };
   for (const r of rows) {
     const f = r.ma ? resolve(r.ma) : null;
     const [lat, lng] = geocodes[r.postal] ?? [null, null];
-    mcsts.push({ key: r.key, mcst: r.mcst, name: r.name, address: r.address, postal: r.postal, lat, lng, lots: r.lots, firm: f?.id ?? null, tel: r.tel });
+    const { use, by } = classify(r.name, landuse.zones?.[r.postal]);
+    if (by) classifiedBy[by]++;
+    mcsts.push({ key: r.key, mcst: r.mcst, name: r.name, address: r.address, postal: r.postal, lat, lng, lots: r.lots, firm: f?.id ?? null, tel: r.tel, use });
     if (!f) continue;
-    if (!firms.has(f.id)) firms.set(f.id, { id: f.id, key: f.key, spellings: {}, count: 0, units: 0, districts: {} });
+    if (!firms.has(f.id)) firms.set(f.id, { id: f.id, key: f.key, spellings: {}, count: 0, units: 0, byUse: Object.fromEntries(USES.map((u) => [u, 0])), districts: {} });
     const firm = firms.get(f.id);
     firm.count++;
     firm.units += r.lots ?? 0;
+    if (use) firm.byUse[use]++;
     firm.spellings[r.ma] = (firm.spellings[r.ma] ?? 0) + 1;
     const d = postalDistrict(r.postal);
     if (d) firm.districts[d] = (firm.districts[d] ?? 0) + 1;
@@ -67,6 +73,7 @@ export function build({ current, history, geocodes, aliases, accreditation }) {
         spellings: spellings.map(([s]) => s),
         count: f.count,
         units: f.units,
+        byUse: f.byUse,
         districts: f.districts,
         accredited: accredited.get(f.id) ?? null,
         history: h ? { startCount: h.startCount, gained: h.gained, lost: h.lost, newDevelopments: h.newDevelopments } : null,
@@ -89,6 +96,17 @@ export function build({ current, history, geocodes, aliases, accreditation }) {
       withLots: mcsts.filter((m) => m.lots).length,
     },
     history: diff ? { since: diff.since, until: diff.until, switches: diff.switches, snapshots: snaps.length } : null,
+    // Types are only offered as a filter once URA's zoning has been read.
+    landUse: classifiedBy.zone
+      ? {
+          source: landuse.title ?? null,
+          dataset: landuse.dataset ?? null,
+          checked: landuse.checked ?? null,
+          byZone: classifiedBy.zone,
+          byName: classifiedBy.name,
+          counts: Object.fromEntries([...USES, null].map((u) => [u ?? "unknown", mcsts.filter((m) => m.use === u).length])),
+        }
+      : null,
     accreditation: {
       source: accreditation.source ?? null,
       checked: accreditation.checked ?? null,
@@ -148,6 +166,7 @@ function main() {
     geocodes: readJson(path.join(dir, "geocode-cache.json"), {}),
     aliases: readJson(args.aliases ?? path.join(dir, "ma-aliases.json"), {}),
     accreditation: readJson(args.accreditation ?? path.join(dir, "accreditation.json"), {}),
+    landuse: readJson(path.join(dir, "landuse-cache.json"), {}),
   });
 
   writeJson(path.join(out, "meta.json"), result.meta);
@@ -157,6 +176,12 @@ function main() {
   const { meta, agents, report } = result;
   console.log(`Built ${meta.counts.mcsts} MCSTs, ${meta.counts.firms} managing agents (${meta.counts.noAgent} MCSTs with none listed).`);
   console.log(`Located ${meta.counts.located}/${meta.counts.mcsts}; strata lots known for ${meta.counts.withLots}.`);
+  if (meta.landUse) {
+    const lu = meta.landUse;
+    console.log(`Types (${lu.byZone} from URA zoning, ${lu.byName} from the name): ${Object.entries(lu.counts).map(([k, n]) => `${k} ${n}`).join(", ")}`);
+    const unknown = result.mcst.rows.filter((r) => r[result.mcst.cols.indexOf("use")] == null).map((r) => r[result.mcst.cols.indexOf("name")]);
+    if (unknown.length) console.log(`  Type unknown, e.g.: ${unknown.slice(0, 30).join("; ")}`);
+  } else console.log("Types: no land-use zones yet (run scripts/landuse.mjs), so no type filter.");
   console.log(meta.history ? `History ${meta.history.since} → ${meta.history.until}: ${meta.history.switches} switches.` : "History: only one snapshot so far.");
   console.log(`Accreditation: ${meta.accreditation.matched}/${meta.accreditation.listed} listed firms matched (complete: ${meta.accreditation.complete}).`);
   if (report.skippedSnapshots.length) console.log(`Ignored history snapshots that share too few MCST numbers with today's: ${report.skippedSnapshots.join(", ")}`);

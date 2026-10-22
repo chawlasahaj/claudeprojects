@@ -128,6 +128,8 @@ test("pipeline on the fixtures: fetch twice, build, check the output", () => {
   // Running again with the same data writes no new history.
   const again = run("scripts/fetch-mcst.mjs", "--csv", path.join(FIX, "mcst-sample.csv"), "--data", tmp, "--date", "2026-10-15");
   assert.match(again, /unchanged/);
+  run("scripts/landuse.mjs", "--data", tmp, "--geojson", path.join(FIX, "landuse.geojson"));
+  assert.match(run("scripts/landuse.mjs", "--data", tmp), /0 without a land-use zone/); // cached: no download
   run("scripts/build-data.mjs", "--data", tmp, "--out", path.join(tmp, "out"));
 
   const meta = JSON.parse(fs.readFileSync(path.join(tmp, "out", "meta.json"), "utf8"));
@@ -150,6 +152,16 @@ test("pipeline on the fixtures: fetch twice, build, check the output", () => {
   assert.equal(agents[0].id, "alpha-estate-management");
 
   assert.equal(mcst.cols.length, mcst.rows[0].length);
+  const useOf = Object.fromEntries(mcst.rows.map((r) => [r[mcst.cols.indexOf("name")], r[mcst.cols.indexOf("use")]]));
+  assert.equal(useOf["TEST HILL RESIDENCES"], "home");
+  assert.equal(useOf["MOCK VIEW"], "commercial"); // in the hole of the residential zone
+  assert.equal(useOf["KATONG TEST"], "commercial"); // one part of a multipolygon
+  assert.equal(useOf["EAST FIXTURE"], "industrial"); // KML-style attributes, 3D coordinates
+  assert.equal(useOf["NORTH SAMPLE"], "home"); // on a road, homes around it
+  assert.equal(useOf["UNLOCATED COURT"], null);
+  assert.deepEqual(agents.find((a) => a.id === "delta-facilities").byUse, { home: 0, mixed: 0, commercial: 3, industrial: 0 });
+  assert.deepEqual(meta.landUse.counts, { home: 14, mixed: 0, commercial: 3, industrial: 2, unknown: 5 });
+  assert.equal(meta.landUse.byZone, 19);
   assert.ok(mcst.rows.every((r) => !String(r[mcst.cols.indexOf("name")]).includes("SUB MC")));
 });
 
@@ -173,4 +185,87 @@ test("history ignores a snapshot keyed differently from today's", async () => {
   const r = build({ current, history, geocodes: {}, aliases: {}, accreditation: {} });
   assert.equal(r.meta.history, null);
   assert.deepEqual(r.report.skippedSnapshots, ["2024-08-31"]);
+});
+
+test("land use: URA zones map to types, other zones to nothing", async () => {
+  const { zoneUse } = await import("../scripts/lib/landuse.mjs");
+  const cases = {
+    RESIDENTIAL: "home",
+    "RESIDENTIAL / INSTITUTION": "home",
+    "RESIDENTIAL WITH COMMERCIAL AT 1ST STOREY": "mixed",
+    "COMMERCIAL &amp; RESIDENTIAL": "mixed",
+    WHITE: "mixed",
+    COMMERCIAL: "commercial",
+    "COMMERCIAL / INSTITUTION": "commercial",
+    HOTEL: "commercial",
+    "BUSINESS PARK": "commercial",
+    "BUSINESS PARK - WHITE": "commercial",
+    "BUSINESS 1": "industrial",
+    "business 2 - white": "industrial",
+    ROAD: null,
+    PARK: null,
+    "EDUCATIONAL INSTITUTION": null,
+    "": null,
+  };
+  for (const [lu, use] of Object.entries(cases)) assert.equal(zoneUse(lu), use, lu);
+  assert.equal(zoneUse(null), null);
+});
+
+test("land use: names decide when the zone doesn't", async () => {
+  const { nameUse, classify } = await import("../scripts/lib/landuse.mjs");
+  assert.equal(nameUse("KAKI BUKIT INDUSTRIAL TERRACE"), "industrial");
+  assert.equal(nameUse("THE TECHPLACE"), "industrial");
+  assert.equal(nameUse("CITY SQUARE RESIDENCES"), "home");
+  assert.equal(nameUse("TAHIR BUILDING"), "commercial");
+  assert.equal(nameUse("LIANG COURT COMPLEX"), "commercial");
+  assert.equal(nameUse("THE COAST AT SENTOSA COVE"), null);
+  // Zoning wins for homes and industry, whatever the name says.
+  assert.deepEqual(classify("DEMO TOWERS", { lu: "RESIDENTIAL" }), { use: "home", by: "zone" });
+  assert.deepEqual(classify("OFFICE PARK", { lu: "BUSINESS 2" }), { use: "industrial", by: "zone" });
+  // On commercial and mixed-use land, the name can tell homes from offices.
+  assert.deepEqual(classify("ORCHARD RESIDENCES", { lu: "COMMERCIAL" }), { use: "mixed", by: "zone" });
+  assert.deepEqual(classify("55 MARKET STREET", { lu: "COMMERCIAL" }), { use: "commercial", by: "zone" });
+  assert.deepEqual(classify("MARINA BAY SUITES", { lu: "WHITE" }), { use: "home", by: "zone" });
+  assert.deepEqual(classify("OUE DOWNTOWN", { lu: "WHITE" }), { use: "mixed", by: "zone" });
+  assert.deepEqual(classify("GB BUILDING", { lu: "WHITE" }), { use: "commercial", by: "zone" });
+  // The zone next door, when the point is on a road.
+  assert.deepEqual(classify("NORTH SAMPLE", { lu: "ROAD", near: "RESIDENTIAL" }), { use: "home", by: "zone" });
+  assert.deepEqual(classify("NORTH SAMPLE", { lu: "ROAD" }), { use: null, by: null });
+  assert.deepEqual(classify("SIMS INDUSTRIAL BUILDING", null), { use: "industrial", by: "name" });
+});
+
+test("land use: points in polygons with holes and multipolygons", async () => {
+  const { inGeometry, bbox, luDesc, zoneFromSamples, samplePoints } = await import("../scripts/lib/landuse.mjs");
+  const sq = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]];
+  const holed = { type: "Polygon", coordinates: [sq(0, 0, 10, 10), sq(4, 4, 6, 6)] };
+  assert.ok(inGeometry(1, 1, holed));
+  assert.ok(!inGeometry(5, 5, holed));
+  assert.ok(!inGeometry(11, 5, holed));
+  const multi = { type: "MultiPolygon", coordinates: [[sq(0, 0, 1, 1)], [sq(5, 5, 6, 6)]] };
+  assert.ok(inGeometry(5.5, 5.5, multi) && inGeometry(0.5, 0.5, multi) && !inGeometry(3, 3, multi));
+  assert.deepEqual(bbox(multi), [0, 0, 6, 6]);
+  assert.equal(luDesc({ Description: "<tr><th>LU_DESC</th> <td>COMMERCIAL &amp; RESIDENTIAL</td></tr>" }), "COMMERCIAL & RESIDENTIAL");
+  assert.equal(luDesc({ LU_DESC: " residential " }), "RESIDENTIAL");
+  assert.equal(luDesc({}), null);
+  // A road at the point itself, homes on most sides: the homes win.
+  const s = samplePoints(1.3, 103.8);
+  assert.equal(s.length, 17);
+  const zone = zoneFromSamples(s.map((p, i) => ({ ...p, lu: p.ring === 0 ? "ROAD" : p.ring === 1 ? (i % 3 ? "RESIDENTIAL" : "COMMERCIAL") : "PARK" })));
+  assert.deepEqual(zone, { lu: "ROAD", near: "RESIDENTIAL" });
+  assert.deepEqual(zoneFromSamples([{ ring: 0, lu: "HOTEL" }]), { lu: "HOTEL" });
+  assert.deepEqual(zoneFromSamples([]), { lu: null });
+});
+
+test("land use: features are read the same way however the file is split", async () => {
+  const { eachFeature } = await import("../scripts/lib/landuse.mjs");
+  const read = async (chunkSize) => {
+    const out = [];
+    await eachFeature(path.join(FIX, "landuse.geojson"), (f) => out.push(f), { chunkSize });
+    return out;
+  };
+  const whole = await read(1 << 20);
+  assert.equal(whole.length, 8); // the crs object isn't a feature
+  assert.ok(whole.every((f) => f.type === "Feature"));
+  assert.equal(whole[0].properties.Name, "kml_{1}");
+  assert.deepEqual(await read(7), whole);
 });
