@@ -1,6 +1,9 @@
 // Builds the JSON the site loads from the saved data:
-//   web/data/mcst.json    every active MCST with its coordinates, type and managing agent
-//   web/data/agents.json  every managing agent: portfolio, types, districts, accreditation, switches
+// StrataMatch is for condos, so developments zoned or named as offices, shops or factories are
+// left out (see scripts/lib/landuse.mjs).
+//
+//   web/data/mcst.json    every active condo MCST with its coordinates and managing agent
+//   web/data/agents.json  every managing agent of a condo: portfolio, districts, accreditation, switches
 //   web/data/meta.json    dates, counts and sources
 //
 //   node scripts/build-data.mjs [--data <dir>] [--out <dir>] [--aliases <file>] [--accreditation <file>]
@@ -14,8 +17,8 @@ import { diffHistory } from "./lib/history.mjs";
 import { classify } from "./lib/landuse.mjs";
 import { postalDistrict } from "../web/lib/geo.js";
 
-const MCST_COLS = ["key", "mcst", "name", "address", "postal", "lat", "lng", "lots", "firm", "tel", "use"];
-const USES = ["home", "mixed", "commercial", "industrial"];
+const MCST_COLS = ["key", "mcst", "name", "address", "postal", "lat", "lng", "lots", "firm", "tel"];
+const isCondo = (use) => use !== "commercial" && use !== "industrial";
 
 export function build({ current, history, geocodes, aliases, accreditation, landuse = {} }) {
   const resolve = makeResolver(aliases);
@@ -24,19 +27,26 @@ export function build({ current, history, geocodes, aliases, accreditation, land
 
   const firms = new Map();
   const mcsts = [];
-  const classifiedBy = { zone: 0, name: 0 };
+  const types = { home: 0, mixed: 0, unknown: 0, commercial: 0, industrial: 0 };
+  const leftOut = new Set();
+  // Every spelling of each firm, offices included, so the display name can use BCA's best casing.
+  const allSpellings = {};
   for (const r of rows) {
     const f = r.ma ? resolve(r.ma) : null;
+    if (f) (allSpellings[f.id] ??= {})[r.ma] = (allSpellings[f.id][r.ma] ?? 0) + 1;
+    const { use } = classify(r.name, landuse.zones?.[r.postal]);
+    types[use ?? "unknown"]++;
+    if (!isCondo(use)) {
+      leftOut.add(r.key);
+      continue;
+    }
     const [lat, lng] = geocodes[r.postal] ?? [null, null];
-    const { use, by } = classify(r.name, landuse.zones?.[r.postal]);
-    if (by) classifiedBy[by]++;
-    mcsts.push({ key: r.key, mcst: r.mcst, name: r.name, address: r.address, postal: r.postal, lat, lng, lots: r.lots, firm: f?.id ?? null, tel: r.tel, use });
+    mcsts.push({ key: r.key, mcst: r.mcst, name: r.name, address: r.address, postal: r.postal, lat, lng, lots: r.lots, firm: f?.id ?? null, tel: r.tel });
     if (!f) continue;
-    if (!firms.has(f.id)) firms.set(f.id, { id: f.id, key: f.key, spellings: {}, count: 0, units: 0, byUse: Object.fromEntries(USES.map((u) => [u, 0])), districts: {} });
+    if (!firms.has(f.id)) firms.set(f.id, { id: f.id, key: f.key, spellings: {}, count: 0, units: 0, districts: {} });
     const firm = firms.get(f.id);
     firm.count++;
     firm.units += r.lots ?? 0;
-    if (use) firm.byUse[use]++;
     firm.spellings[r.ma] = (firm.spellings[r.ma] ?? 0) + 1;
     const d = postalDistrict(r.postal);
     if (d) firm.districts[d] = (firm.districts[d] ?? 0) + 1;
@@ -52,8 +62,9 @@ export function build({ current, history, geocodes, aliases, accreditation, land
   }
 
   // History: the earliest snapshot that shares most MCST numbers with the latest, so a
-  // snapshot keyed differently can't make every development look new.
-  const snaps = [...history].sort((a, b) => a.date.localeCompare(b.date));
+  // snapshot keyed differently can't make every development look new. Only condos count.
+  const condosOnly = (agents) => Object.fromEntries(Object.entries(agents).filter(([k]) => !leftOut.has(k)));
+  const snaps = [...history].map((s) => ({ ...s, agents: condosOnly(s.agents) })).sort((a, b) => a.date.localeCompare(b.date));
   const latest = snaps.at(-1);
   const overlap = (s) => {
     const keys = Object.keys(latest.agents);
@@ -69,11 +80,10 @@ export function build({ current, history, geocodes, aliases, accreditation, land
       const h = diff?.perFirm[f.id];
       return {
         id: f.id,
-        name: displayOverrides[f.key] ?? nameFor(spellings.map(([sp]) => sp)),
+        name: displayOverrides[f.key] ?? nameFor(Object.entries(allSpellings[f.id]).sort((a, b) => b[1] - a[1]).map(([sp]) => sp)),
         spellings: spellings.map(([s]) => s),
         count: f.count,
         units: f.units,
-        byUse: f.byUse,
         districts: f.districts,
         accredited: accredited.get(f.id) ?? null,
         history: h ? { startCount: h.startCount, gained: h.gained, lost: h.lost, newDevelopments: h.newDevelopments } : null,
@@ -96,17 +106,7 @@ export function build({ current, history, geocodes, aliases, accreditation, land
       withLots: mcsts.filter((m) => m.lots).length,
     },
     history: diff ? { since: diff.since, until: diff.until, switches: diff.switches, snapshots: snaps.length } : null,
-    // Types are only offered as a filter once URA's zoning has been read.
-    landUse: classifiedBy.zone
-      ? {
-          source: landuse.title ?? null,
-          dataset: landuse.dataset ?? null,
-          checked: landuse.checked ?? null,
-          byZone: classifiedBy.zone,
-          byName: classifiedBy.name,
-          counts: Object.fromEntries([...USES, null].map((u) => [u ?? "unknown", mcsts.filter((m) => m.use === u).length])),
-        }
-      : null,
+    landUse: { source: landuse.title ?? null, dataset: landuse.dataset ?? null, checked: landuse.checked ?? null, types },
     accreditation: {
       source: accreditation.source ?? null,
       checked: accreditation.checked ?? null,
@@ -120,7 +120,7 @@ export function build({ current, history, geocodes, aliases, accreditation, land
     meta,
     agents,
     mcst: { cols: MCST_COLS, rows: mcsts.map((m) => MCST_COLS.map((c) => m[c] ?? null)) },
-    report: { unmatchedAccreditation, nearDuplicates: nearDuplicates(agents), skippedSnapshots: skipped },
+    report: { unmatchedAccreditation, nearDuplicates: nearDuplicates(agents), skippedSnapshots: skipped, leftOut: rows.filter((r) => leftOut.has(r.key)).map((r) => r.name) },
   };
 }
 
@@ -176,16 +176,13 @@ function main() {
   const { meta, agents, report } = result;
   console.log(`Built ${meta.counts.mcsts} MCSTs, ${meta.counts.firms} managing agents (${meta.counts.noAgent} MCSTs with none listed).`);
   console.log(`Located ${meta.counts.located}/${meta.counts.mcsts}; strata lots known for ${meta.counts.withLots}.`);
-  if (meta.landUse) {
-    const lu = meta.landUse;
-    console.log(`Types (${lu.byZone} from URA zoning, ${lu.byName} from the name): ${Object.entries(lu.counts).map(([k, n]) => `${k} ${n}`).join(", ")}`);
-    const unknown = result.mcst.rows.filter((r) => r[result.mcst.cols.indexOf("use")] == null).map((r) => r[result.mcst.cols.indexOf("name")]);
-    if (unknown.length) console.log(`  Type unknown, e.g.: ${unknown.slice(0, 30).join("; ")}`);
-  } else console.log("Types: no land-use zones yet (run scripts/landuse.mjs), so no type filter.");
+  const t = meta.landUse.types;
+  console.log(`Kept ${t.home} residential, ${t.mixed} mixed-use and ${t.unknown} untyped developments; left out ${t.commercial} commercial and ${t.industrial} industrial.${meta.landUse.source ? "" : " (No land-use zones yet: run scripts/landuse.mjs.)"}`);
+  if (report.leftOut.length) console.log(`  Left out, e.g.: ${report.leftOut.slice(0, 40).join("; ")}`);
   console.log(meta.history ? `History ${meta.history.since} → ${meta.history.until}: ${meta.history.switches} switches.` : "History: only one snapshot so far.");
   console.log(`Accreditation: ${meta.accreditation.matched}/${meta.accreditation.listed} listed firms matched (complete: ${meta.accreditation.complete}).`);
   if (report.skippedSnapshots.length) console.log(`Ignored history snapshots that share too few MCST numbers with today's: ${report.skippedSnapshots.join(", ")}`);
-  if (report.unmatchedAccreditation.length) console.log("  Not matched to a BCA name:", report.unmatchedAccreditation.join("; "));
+  if (report.unmatchedAccreditation.length) console.log("  Not matched to a firm that runs condos:", report.unmatchedAccreditation.join("; "));
   console.log("Largest:", agents.slice(0, 15).map((a) => `${a.name} ${a.count}`).join(", "));
   const multi = agents.filter((a) => a.spellings.length > 1);
   if (multi.length) console.log(`${multi.length} firms appear under more than one spelling (merged automatically).`);

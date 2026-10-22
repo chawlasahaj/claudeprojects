@@ -63,7 +63,7 @@ test("shortlist: nearby firm first, current agent and empty firms left out", () 
   assert.ok(!ids.includes("empty"));
   assert.equal(r[0].nearby.length, 3);
   assert.ok(r[0].nearby[0].km <= r[0].nearby[1].km);
-  assert.match(r[0].reasons[0].text, /Manages 3 developments within 3 km/);
+  assert.match(r[0].reasons[0].text, /Manages 3 condos within 3 km/);
   // The firm without coordinates counts as nearby through the postal district.
   assert.equal(r.find((x) => x.firm.id === "nocoords").nearby.length, 1);
 });
@@ -97,38 +97,30 @@ test("shortlist: can include the current agent, and works without coordinates", 
   assert.match(noCoords[0].reasons[0].text, /in your postal district/);
 });
 
-test("shortlist: only developments of the chosen type count", () => {
-  // "office" runs three offices next door and no homes; "near" runs homes.
-  const typed = [
-    ...mcsts.map((m) => ({ ...m, use: "home" })),
-    { ...M("20", "office", 1.3200, 103.8000, 300), use: "commercial" },
-    { ...M("21", "office", 1.3201, 103.8001, 300), use: "commercial" },
-    { ...M("22", "office", 1.3202, 103.8002, 300), use: "mixed" },
-    { ...M("23", "office", 1.3203, 103.8003, 300), use: null },
-  ];
-  const withOffice = [...firms, { id: "office", name: "Office Co", count: 4, byUse: { home: 0, mixed: 1, commercial: 2, industrial: 0 }, history: null, accredited: null }];
-  const homes = shortlist(target, typed, withOffice, { group: "home" });
-  // One mixed-use development isn't enough to be suggested for homes.
-  assert.ok(!homes.some((x) => x.firm.id === "office"));
-  assert.match(homes[0].reasons[0].text, /Manages 3 residential developments within 3 km/);
-  const offices = shortlist(target, typed, withOffice, { group: "commercial" });
-  const office = offices.find((x) => x.firm.id === "office");
-  assert.equal(office.count, 3);
-  assert.equal(office.nearby.length, 3); // commercial and mixed, not the unknown one
-  assert.match(office.reasons.at(-1).text, /Manages 3 commercial developments, 4 developments in total/);
-  // Firms without type counts (older data) keep their full count.
-  assert.ok(offices.some((x) => x.firm.id === "near"));
-  const all = shortlist(target, typed, withOffice, { group: "all" });
-  assert.equal(all.find((x) => x.firm.id === "office").nearby.length, 4);
+test("shortlist: similar size only", () => {
+  // "big" runs three nearby condos far bigger than the target (300 lots, so 150–600 counts).
+  const sized = [...mcsts, M("20", "big", 1.3200, 103.8000, 2000), M("21", "big", 1.3201, 103.8001, 1500), M("22", "big", 1.3202, 103.8002, 900)];
+  const withBig = [...firms, { id: "big", name: "Big Co", count: 3, history: null, accredited: null }];
+  assert.ok(shortlist(target, sized, withBig, {}).some((x) => x.firm.id === "big"));
+  const r = shortlist(target, sized, withBig, { sameSize: true });
+  assert.ok(!r.some((x) => x.firm.id === "big"), "no condos of a similar size, so not suggested");
+  const near = r.find((x) => x.firm.id === "near");
+  assert.equal(near.count, 3);
+  assert.equal(near.signals.similar, null); // everything counted is similar already
+  assert.match(near.reasons[0].text, /Manages 3 similar-size condos within 3 km/);
+  assert.ok(!near.reasons.some((x) => /of a similar size \(/.test(x.text)));
+  // A firm with some similar-size condos is judged on those alone.
+  const mixed = [...mcsts, M("30", "mix", 1.3200, 103.8000, 300), M("31", "mix", 1.3201, 103.8001, 310), M("32", "mix", 1.3202, 103.8002, 290), M("33", "mix", 1.3203, 103.8003, 5000)];
+  const withMix = [...firms, { id: "mix", name: "Mix Co", count: 4, history: null, accredited: null }];
+  const mix = shortlist(target, mixed, withMix, { sameSize: true }).find((x) => x.firm.id === "mix");
+  assert.equal(mix.nearby.length, 3);
+  assert.match(mix.reasons.at(-1).text, /Manages 3 similar-size condos, 4 condos in total/);
+  // Without the target's size, the option does nothing.
+  const unsized = shortlist({ ...target, lots: null }, sized, withBig, { sameSize: true });
+  assert.ok(unsized.some((x) => x.firm.id === "big"));
 });
 
-test("development groups", async () => {
-  const { inGroup, groupFor, groupCount } = await import("../web/lib/use.js");
-  assert.ok(inGroup("mixed", "home") && inGroup("mixed", "commercial") && !inGroup("mixed", "industrial"));
-  assert.ok(!inGroup(null, "home") && inGroup(null, "all") && inGroup("industrial", "unknown-group"));
-  assert.equal(groupFor("commercial"), "commercial");
-  assert.equal(groupFor("mixed"), "home");
-  assert.equal(groupFor(null), "home");
-  assert.equal(groupCount({ count: 9, byUse: { home: 4, mixed: 2, commercial: 3, industrial: 0 } }, "home"), 6);
-  assert.equal(groupCount({ count: 9 }, "home"), 9);
+test("size range", async () => {
+  const { sizeRange } = await import("../web/lib/score.js");
+  assert.deepEqual(sizeRange(249), [125, 498]);
 });

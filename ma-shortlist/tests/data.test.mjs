@@ -56,6 +56,15 @@ test("rows: no-agent values, padded postal codes, lots, sub-MCs and status", () 
   assert.ok(isActive(row({ Status: "" })));
 });
 
+test("rows: the development's own postal code comes from its address, not BCA's correspondence column", () => {
+  const map = mapColumns(["MCST No", "Development Name", "Development Location", "Postal Code", "Managing Agent Name"]);
+  const row = (loc, postal) => normaliseRow({ "MCST No": "1", "Development Name": "X", "Development Location": loc, "Postal Code": postal, "Managing Agent Name": "" }, map);
+  assert.equal(row("557 UPPER THOMSON ROAD 574418", "409022").postal, "574418");
+  assert.equal(row("17J PHILLIP STREET 48695", "469000").postal, "048695"); // lost leading zero
+  assert.equal(row("443B JOO CHIAT ROAD", "427650").postal, "427650"); // no postal code in the address
+  assert.equal(row("", "88123").postal, "088123");
+});
+
 test("firm names: spellings collapse to one key and display nicely", () => {
   const same = ["ABC PROPERTY MGT PTE. LTD.", "ABC Property Management Pte Ltd", "abc property mgmt (s) pte ltd", "THE ABC PROPERTY MANAGEMENT PRIVATE LIMITED"];
   assert.equal(new Set(same.map(firmKey)).size, 1);
@@ -136,9 +145,9 @@ test("pipeline on the fixtures: fetch twice, build, check the output", () => {
   const agents = JSON.parse(fs.readFileSync(path.join(tmp, "out", "agents.json"), "utf8"));
   const mcst = JSON.parse(fs.readFileSync(path.join(tmp, "out", "mcst.json"), "utf8"));
 
-  assert.equal(meta.counts.mcsts, 24); // terminated and sub-MC rows dropped
+  assert.equal(meta.counts.mcsts, 20); // terminated, sub-MC, office and industrial rows dropped
   assert.equal(meta.counts.noAgent, 2);
-  assert.equal(meta.counts.located, 23);
+  assert.equal(meta.counts.located, 19);
   assert.deepEqual(meta.history, { since: "2026-03-01", until: "2026-10-01", switches: 3, snapshots: 2 });
   assert.equal(meta.accreditation.matched, 2);
 
@@ -152,16 +161,15 @@ test("pipeline on the fixtures: fetch twice, build, check the output", () => {
   assert.equal(agents[0].id, "alpha-estate-management");
 
   assert.equal(mcst.cols.length, mcst.rows[0].length);
-  const useOf = Object.fromEntries(mcst.rows.map((r) => [r[mcst.cols.indexOf("name")], r[mcst.cols.indexOf("use")]]));
-  assert.equal(useOf["TEST HILL RESIDENCES"], "home");
-  assert.equal(useOf["MOCK VIEW"], "commercial"); // in the hole of the residential zone
-  assert.equal(useOf["KATONG TEST"], "commercial"); // one part of a multipolygon
-  assert.equal(useOf["EAST FIXTURE"], "industrial"); // KML-style attributes, 3D coordinates
-  assert.equal(useOf["NORTH SAMPLE"], "home"); // on a road, homes around it
-  assert.equal(useOf["UNLOCATED COURT"], null);
-  assert.deepEqual(agents.find((a) => a.id === "delta-facilities").byUse, { home: 0, mixed: 0, commercial: 3, industrial: 0 });
-  assert.deepEqual(meta.landUse.counts, { home: 14, mixed: 0, commercial: 3, industrial: 2, unknown: 5 });
-  assert.equal(meta.landUse.byZone, 19);
+  // Condos only: offices (MOCK VIEW sits in a hole of the residential zone, KATONG TEST and
+  // WEST SAMPLE in a multipolygon) and the factory (KML-style attributes, 3D coordinates) are out.
+  const names = new Set(mcst.rows.map((r) => r[mcst.cols.indexOf("name")]));
+  for (const n of ["MOCK VIEW", "KATONG TEST", "WEST SAMPLE", "BEACH DEMO"]) assert.ok(!names.has(n), n);
+  // NORTH SAMPLE's point is on a road with homes around it; UNLOCATED COURT has no type and stays.
+  for (const n of ["TEST HILL RESIDENCES", "NORTH SAMPLE", "EAST FIXTURE", "UNLOCATED COURT"]) assert.ok(names.has(n), n);
+  assert.deepEqual(meta.landUse.types, { home: 14, mixed: 0, unknown: 6, commercial: 3, industrial: 1 });
+  assert.equal(agents.find((a) => a.id === "delta-facilities").count, 1);
+  assert.deepEqual(agents.find((a) => a.id === "coral-strata-management").history, { startCount: 5, gained: 0, lost: 1, newDevelopments: 0 });
   assert.ok(mcst.rows.every((r) => !String(r[mcst.cols.indexOf("name")]).includes("SUB MC")));
 });
 
@@ -222,6 +230,8 @@ test("land use: names decide when the zone doesn't", async () => {
   // Zoning wins for homes and industry, whatever the name says.
   assert.deepEqual(classify("DEMO TOWERS", { lu: "RESIDENTIAL" }), { use: "home", by: "zone" });
   assert.deepEqual(classify("OFFICE PARK", { lu: "BUSINESS 2" }), { use: "industrial", by: "zone" });
+  // ...except that a name like "Condominium" keeps homes in, whatever the zone says.
+  assert.deepEqual(classify("PEIRCE VIEW CONDOMINIUM", { lu: "BUSINESS 1" }), { use: "home", by: "zone" });
   // On commercial and mixed-use land, the name can tell homes from offices.
   assert.deepEqual(classify("ORCHARD RESIDENCES", { lu: "COMMERCIAL" }), { use: "mixed", by: "zone" });
   assert.deepEqual(classify("55 MARKET STREET", { lu: "COMMERCIAL" }), { use: "commercial", by: "zone" });
@@ -268,4 +278,14 @@ test("land use: features are read the same way however the file is split", async
   assert.ok(whole.every((f) => f.type === "Feature"));
   assert.equal(whole[0].properties.Name, "kml_{1}");
   assert.deepEqual(await read(7), whole);
+});
+
+test("build: a firm's name uses BCA's best casing even when that spelling is on a left-out office", async () => {
+  const { build } = await import("../scripts/build-data.mjs");
+  const row = (key, name, ma) => ({ key, mcst: key, sub: "", type: "MC", name, address: "", postal: "259001", tel: "", status: "ACTIVE", lots: 100, ma });
+  const current = { rows: [row("1", "SUNNY CONDOMINIUM", "JONES LANG LASALLE PTE LTD"), row("2", "SUNNY CONDOMINIUM 2", "JONES LANG LASALLE PTE LTD"), row("3", "TALL OFFICE BUILDING", "Jones Lang LaSalle Pte Ltd")], fetchedAt: "2026-10-01", source: {} };
+  const r = build({ current, history: [], geocodes: {}, aliases: {}, accreditation: {} });
+  assert.equal(r.meta.counts.mcsts, 2);
+  assert.equal(r.agents[0].count, 2);
+  assert.equal(r.agents[0].name, "Jones Lang LaSalle Pte Ltd");
 });

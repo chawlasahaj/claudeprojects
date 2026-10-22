@@ -17,7 +17,8 @@
 | Accreditation counts in the score only once the copied list is complete | A partial list would mark down accredited firms we missed. |
 | People's names, "MCST" and placeholders in BCA's agent column are dropped | They aren't firms, and showing individuals' names would be a privacy problem. |
 | Only firms with 3+ developments are suggested | Many one- or two-building names are developers, owners or hotels running their own building. |
-| Developments are compared with their own type: homes, offices and shops, or industrial | A tester found office towers in a condo's "nearby" list. BCA's list has no type, so we use URA's Master Plan zoning at the postal code, then the name. Mixed-use developments count as both homes and shops. |
+| Condos only: offices, shops and factories are left out everywhere | A tester found office towers in a condo's "nearby" list, and the site is for condo councils. BCA's list has no type, so we use URA's Master Plan zoning at the postal code, then the name. Condos with shops below stay in. |
+| Developments are placed by the postal code in their address | BCA's postal code column is the correspondence address, often the agent's office, for about 40% of MCSTs. |
 
 ## Phases
 
@@ -27,7 +28,8 @@
 - [x] **4 · Compare:** yearly cost with GST, cost per unit and per manager-hour, cost over the term, weighted score, printable summary.
 - [x] **Real data:** 3,702 MCSTs and 221 managing agents from BCA's list as of 8 Oct 2026. Typos merged, name casing fixed, and switch tracking started on 22 Oct 2026.
 - [x] **Go live:** at https://condocouncil.pages.dev, published by Cloudflare Pages from `main`. 3,638 of 3,702 MCSTs are on the map, and the full SISV accreditation list (checked 22 Oct 2026) is in.
-- [x] **Feedback 1, "remove office and industrial buildings":** every MCST is typed from URA's Master Plan 2025 land-use zoning. The shortlist compares with the same type by default, and the Agents pages show and filter by type.
+- [x] **Feedback 1, "remove office and industrial buildings":** every MCST is typed from URA's Master Plan 2025 land-use zoning, and offices, shops and factories are left out. Developments are now placed by their own postal code, not BCA's correspondence one.
+- [x] **Feedback 2, "similar size to mine":** a shortlist option counts only condos with half to twice your strata lots.
 - [ ] **5 · After launch:**
   - Share in condo council groups.
   - Add a custom domain.

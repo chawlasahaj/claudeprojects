@@ -57,7 +57,7 @@
     import { chrome, loadMeta, fmtInt, fmtDate, $ } from "./app.js";
     chrome("home");
     const m = await loadMeta();
-    if (m) $("#data-line").textContent = `Covers ${fmtInt(m.counts.mcsts)} MCSTs and ${fmtInt(m.counts.firms)} managing agents from BCA's list, as of ${fmtDate(m.fetchedAt)}.`;
+    if (m) $("#data-line").textContent = `Covers ${fmtInt(m.counts.mcsts)} condos and the ${fmtInt(m.counts.firms)} managing agents that run them, from BCA's list as of ${fmtDate(m.fetchedAt)}.`;
   </script>
 </body>
 </html>

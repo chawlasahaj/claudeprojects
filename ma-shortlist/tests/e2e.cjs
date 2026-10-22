@@ -67,7 +67,7 @@ async function run(name, device, base) {
   // Home
   await page.goto(base);
   await page.waitForSelector("#data-line:not(:empty)");
-  check(/24 MCSTs and 5 managing agents/.test(await page.textContent("#data-line")), "home shows the data counts");
+  check(/20 condos and the 5 managing agents/.test(await page.textContent("#data-line")), "home shows the data counts");
   await shot("1-home");
 
   // Shortlist
@@ -78,25 +78,25 @@ async function run(name, device, base) {
   await page.waitForSelector(".result");
   check(!(await page.isVisible("#tray")), "no picks bar before anything is picked");
   const resultNames = () => page.$$eval(".result h3 a", (as) => as.map((a) => a.textContent));
-  check((await page.inputValue("#o-type")) === "home", "a condo is compared with homes by default");
   let names = await resultNames();
-  check(names.length === 2, `two agents that run homes suggested (${names.join(", ")})`);
-  check(!names.some((n) => /Delta/.test(n)), "a firm that only runs offices isn't suggested for a condo");
-  check(!names.some((n) => /Evergreen/.test(n)), "a one-development firm isn't suggested");
+  check(names.length === 2, `two other agents suggested (${names.join(", ")})`);
+  check(!names.some((n) => /Delta/.test(n)), "offices don't count: Delta runs only one condo");
+  check(!names.some((n) => /Evergreen/.test(n)), "a one-condo firm isn't suggested");
   check(!names.some((n) => /Alpha/.test(n)), "current agent left out");
   const reasons = await page.textContent("#results");
-  check(/residential developments within 3 km/.test(reasons), "reasons mention nearby homes");
+  check(/Manages 2 condos within 3 km/.test(reasons), "reasons mention nearby condos");
   check(/Lost 2 of 6 clients since/.test(reasons), "retention reason shown for Brightway");
-  await page.selectOption("#o-type", "all");
-  await page.waitForFunction(() => [...document.querySelectorAll(".result h3 a")].some((a) => /Delta/.test(a.textContent)));
+  check(/Similar size to ours \(160–640 lots\)/.test(await page.textContent("#o-size")), "size option shows the range");
+  await page.selectOption("#o-size", "similar");
+  await page.waitForFunction(() => document.querySelectorAll(".result").length === 1);
   names = await resultNames();
-  check(names.length === 3, `"All types" brings the office firm back (${names.join(", ")})`);
-  check(/Commercial/.test(await page.textContent("#results")), "nearby developments show their type");
+  check(names.length === 1 && /Brightway/.test(names[0]), `similar size only: Coral has just 2 condos of that size (${names.join(", ")})`);
+  check(/similar-size condos within 3 km/.test(await page.textContent("#results")), "reasons count similar-size condos");
+  await page.selectOption("#o-size", "any");
+  await page.waitForFunction(() => document.querySelectorAll(".result").length === 2);
   await page.check("#o-current");
   await page.waitForFunction(() => [...document.querySelectorAll(".result h3 a")].some((a) => /Alpha/.test(a.textContent)));
   check(true, "including the current agent brings it back");
-  await page.uncheck("#o-current");
-  await page.waitForSelector(".result");
   for (const i of [0, 1, 2]) await page.check(`.result >> nth=${i} >> [data-pick]`);
   check(/3 agents picked/.test(await page.textContent("#tray")), "tray counts 3 picks");
   await shot("2-shortlist");
@@ -104,9 +104,6 @@ async function run(name, device, base) {
   // Agents and an agent page
   await page.goto(base + "agents.html");
   check((await page.$$(".agent-row:not(.head)")).length === 5, "agents page lists 5 firms");
-  await page.selectOption("#type", "commercial");
-  check((await page.$$(".agent-row:not(.head)")).length === 1, "type filter: only Delta runs offices and shops");
-  await page.selectOption("#type", "all");
   await page.fill("#q", "coral");
   check((await page.$$(".agent-row:not(.head)")).length === 1, "search narrows the list");
   await shot("3-agents");
@@ -115,7 +112,6 @@ async function run(name, device, base) {
   const agentText = await page.textContent("#body");
   check(/Left this agent/.test(agentText) && /EAST FIXTURE/.test(agentText), "agent page lists developments that left");
   check((await page.$$("#devs tr")).length === 5, "agent page lists its 5 developments");
-  check(/Residential/.test(await page.textContent("#devs")), "agent page shows each development's type");
   await shot("4-agent");
 
   // RFP pack

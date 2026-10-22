@@ -2,9 +2,9 @@
 
 **Live at https://condocouncil.pages.dev**, moving to https://stratamatch.pages.dev
 
-A free, independent website for MCST councils in Singapore that are changing managing agent (MA). It has three parts:
+A free, independent website for condo councils (MCSTs) in Singapore that are changing managing agent (MA). It covers condos only: offices, shops and factories on BCA's list are left out. It has three parts:
 
-1. **Shortlist**: pick your development and see agents worth asking for a quote. They're ranked on public data only: developments of the same type managed nearby (a condo is compared with homes, not offices), developments of a similar size, clients kept or lost, accreditation and portfolio size.
+1. **Shortlist**: pick your condo and see agents worth asking for a quote. They're ranked on public data only: condos managed nearby, condos of a similar size, clients kept or lost, accreditation and portfolio size. An option counts only condos of a similar size to yours.
 2. **RFP pack**: a standard request for proposal with your scope, a timeline worked back from your start date, and one price schedule every agent fills in. You can print it, save it as PDF or download it for Word.
 3. **Compare quotes**: type in each price schedule to see the yearly cost with GST, the cost per unit and per condo-manager hour, and a weighted score.
 
@@ -38,7 +38,9 @@ The **StrataMatch data** workflow (`.github/workflows/ma-shortlist-data.yml`) re
 
 Placing postal codes on the map with OneMap takes about a second each, so each run stops after 30 minutes and the next run carries on. Until a development is placed, "nearby" falls back to the same postal district.
 
-BCA's list doesn't say whether a development is homes, offices or factories. `scripts/landuse.mjs` looks up URA's zoning at each postal code (and the zone beside it when the point lands on a road), and `build-data.mjs` turns that into a type: residential, mixed use, commercial or industrial, falling back to words in the name when there's no zone. The shortlist compares each development with its own type by default. The land-use layer is a big download, so it's only fetched when there are postal codes it hasn't been checked for; `--refresh` checks them all again.
+Each development is placed using the postal code at the end of its address. BCA's separate postal code column is the MCST's correspondence address, which for about 40% of developments is somewhere else, often the managing agent's office.
+
+BCA's list doesn't say whether a development is homes, offices or factories. `scripts/landuse.mjs` looks up URA's zoning at each postal code (and the zone beside it when the point lands on a road), and `build-data.mjs` leaves out anything zoned commercial or industrial, falling back to words in the name when there's no zone. A residential name ("Residences", "Condominium") always keeps a development in. The land-use layer is a big download, so it's only fetched when there are postal codes it hasn't been checked for; `--refresh` checks them all again.
 
 Names with no business word in them are not shown as managing agents. This covers people's names, "MCST" (self-managed) and placeholders like "N". Only firms with 3 or more developments are suggested in a shortlist, but every firm is listed under Agents.
 
