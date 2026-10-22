@@ -86,7 +86,7 @@ async function run(name, device, base) {
   const reasons = await page.textContent("#results");
   check(/Manages 2 condos within 3 km/.test(reasons), "reasons mention nearby condos");
   check(/Lost 2 of 6 clients since/.test(reasons), "retention reason shown for Brightway");
-  check(/Similar size to ours \(160–640 lots\)/.test(await page.textContent("#o-size")), "size option shows the range");
+  check(/160–640 strata lots/.test(await page.textContent("#size-hint")), "size filter shows the range");
   await page.selectOption("#o-size", "similar");
   await page.waitForFunction(() => document.querySelectorAll(".result").length === 1);
   names = await resultNames();
