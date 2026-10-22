@@ -1,0 +1,26 @@
+# Runs MA Shortlist's tests on every push and pull request that touches it.
+# Cloudflare Pages publishes ma-shortlist/web from main by itself; see ma-shortlist/README.md.
+name: MA Shortlist
+
+on:
+  push:
+    paths: ["ma-shortlist/**", ".github/workflows/ma-shortlist.yml"]
+  pull_request:
+    paths: ["ma-shortlist/**", ".github/workflows/ma-shortlist.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ma-shortlist
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm test

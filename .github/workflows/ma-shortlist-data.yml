@@ -1,0 +1,66 @@
+# Refreshes MA Shortlist's data from BCA's list of MCSTs on data.gov.sg and commits it.
+# Runs on the 2nd of every month, on demand, and whenever the data scripts or the name and
+# accreditation fixes change. It commits to the branch it ran on, so main stays current
+# and Cloudflare Pages republishes the site.
+name: MA Shortlist data
+
+on:
+  schedule:
+    - cron: "17 1 2 * *" # 09:17 in Singapore on the 2nd of each month
+  workflow_dispatch:
+  push:
+    paths:
+      - "ma-shortlist/scripts/**"
+      - "ma-shortlist/data/ma-aliases.json"
+      - "ma-shortlist/data/accreditation.json"
+      - ".github/workflows/ma-shortlist-data.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    concurrency:
+      group: ma-shortlist-data-${{ github.ref }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        working-directory: ma-shortlist
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm test
+
+      - name: Download BCA's list of MCSTs
+        run: node scripts/fetch-mcst.mjs
+        env:
+          DATA_GOV_SG_API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
+
+      # Stops after 30 minutes so the build and commit always run; the next run carries on.
+      - name: Place new postal codes on the map
+        continue-on-error: true
+        timeout-minutes: 35
+        run: node scripts/geocode.mjs --max-minutes 30
+
+      - name: Build the site data
+        run: node scripts/build-data.mjs
+
+      - name: Commit any changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data web/data
+          if git diff --cached --quiet; then
+            echo "No changes."
+            exit 0
+          fi
+          git commit -m "Refresh MA Shortlist data from data.gov.sg"
+          # Someone may have pushed while this ran; data files are only written here.
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"

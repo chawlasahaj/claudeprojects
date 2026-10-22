@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en-SG">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RFP Pack Builder</title>
+  <meta name="description" content="Build a standard request for proposal for managing agent services, with a timeline and a price schedule every agent fills in.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <div class="no-print">
+      <h1>RFP pack</h1>
+      <p class="lede">Fill in what you know; everything saves in this browser as you type. The document below updates as you go. Send the same pack to every agent so their answers line up on the <a href="compare.html">Compare</a> page.</p>
+    </div>
+
+    <form id="rfp-form" class="no-print" autocomplete="off">
+      <section class="card">
+        <h2 style="margin-top: 0">1. Your development</h2>
+        <div class="fields">
+          <div class="field"><label for="development">Development name</label><input id="development" type="text"></div>
+          <div class="field"><label for="mcstNo">MCST plan number</label><input id="mcstNo" type="text" inputmode="numeric"></div>
+          <div class="field"><label for="units">Units (strata lots)</label><input id="units" type="number" min="1" inputmode="numeric"></div>
+          <div class="field"><label for="blocks">Blocks</label><input id="blocks" type="text" placeholder="e.g. 4 towers of 20 storeys"></div>
+          <div class="field"><label for="top">Year completed (TOP)</label><input id="top" type="text" inputmode="numeric"></div>
+          <div class="field"><label for="currentAgent">Current managing agent</label><input id="currentAgent" type="text"></div>
+        </div>
+        <div class="field"><label for="address">Address</label><input id="address" type="text"></div>
+        <div class="field"><label for="facilities">Facilities <span class="hint">e.g. 2 pools, gym, tennis court, function rooms, basement car park with 300 lots</span></label><textarea id="facilities"></textarea></div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top: 0">2. Timing</h2>
+        <div class="fields">
+          <div class="field"><label for="startDate">New agent starts on</label><input id="startDate" type="date"></div>
+          <div class="field"><label for="noticeMonths">Notice in your current contract <span class="hint">Months</span></label><input id="noticeMonths" type="number" min="0" max="12" value="3"></div>
+          <div class="field"><label for="openWeeks">Weeks agents get to reply</label><input id="openWeeks" type="number" min="2" max="8" value="4"></div>
+          <div class="field"><label for="termMonths">Contract term you'll offer <span class="hint">Months</span></label><input id="termMonths" type="number" min="6" max="60" value="24"></div>
+        </div>
+        <label class="check"><input id="needsGM" type="checkbox" checked> The appointment goes to a general meeting <span class="hint">Untick only if owners authorised the council to appoint a managing agent at the last general meeting.</span></label>
+        <div id="timeline"></div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top: 0">3. What you need</h2>
+        <fieldset id="scope"><legend>Services</legend></fieldset>
+        <div class="field"><label for="extraScope">Anything else <span class="hint">e.g. a major repair project coming up, a by-law review, a defects claim against the developer</span></label><textarea id="extraScope"></textarea></div>
+        <div class="fields">
+          <div class="field"><label for="managerType">Condo manager</label><select id="managerType"><option value="full">Full-time on site</option><option value="part">Part-time on site</option></select></div>
+          <div class="field"><label for="managerHours">Condo manager hours on site <span class="hint">Per week</span></label><input id="managerHours" type="number" min="1" max="60" value="44"></div>
+          <div class="field"><label for="otherStaff">Other on-site staff</label><input id="otherStaff" type="text" placeholder="e.g. 1 full-time admin assistant"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 style="margin-top: 0">4. Who you're inviting, and how you'll choose</h2>
+        <div class="field"><label for="invited">Agents invited <span class="hint">One per line. Filled in from your shortlist.</span></label><textarea id="invited"></textarea></div>
+        <fieldset id="weights"><legend>Weights for evaluation <span class="hint" style="display: inline">Must add up to 100. The Compare page uses the same weights.</span></legend><div class="fields" id="weight-fields"></div><p id="weight-sum" class="muted"></p></fieldset>
+        <div class="fields">
+          <div class="field"><label for="contactName">Contact name</label><input id="contactName" type="text" placeholder="e.g. Secretary of the council"></div>
+          <div class="field"><label for="contactEmail">Contact email</label><input id="contactEmail" type="email"></div>
+        </div>
+      </section>
+    </form>
+
+    <section class="no-print" style="margin: 24px 0 12px">
+      <div class="btn-row">
+        <button class="btn" type="button" id="print">Print or save as PDF</button>
+        <button class="btn secondary" type="button" id="word">Download for Word</button>
+        <button class="btn secondary" type="button" id="email">Copy cover email</button>
+        <button class="btn quiet small" type="button" id="reset">Start over</button>
+      </div>
+    </section>
+
+    <article class="doc" id="doc" aria-label="RFP document preview"></article>
+  </main>
+  <script type="module" src="rfp-page.js"></script>
+</body>
+</html>

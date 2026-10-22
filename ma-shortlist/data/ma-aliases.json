@@ -1,0 +1,24 @@
+{
+  "_help": "Fixes for managing agent names in BCA's data. Names are compared after removing Pte/Ltd, (S)/(Singapore), punctuation and case, and expanding MGT/MGMT to MANAGEMENT. 'merge' maps one firm to another (renames, typos). 'display' sets the name shown on the site. 'notFirm' lists values that aren't a managing agent; names with no business word in them (people's names, 'MCST') are left out automatically. Run npm run build-data to see possible duplicates.",
+  "merge": {
+    "PROPERTY FACILITY SERVICES PTE LTD": "PROPERTY FACILITY SERVICES (PFS) PTE LTD",
+    "PROPERTY FACILITY SERIVCES PTE LTD": "PROPERTY FACILITY SERVICES (PFS) PTE LTD",
+    "PROPERTY FACILITIES SERVICES PTE LTD": "PROPERTY FACILITY SERVICES (PFS) PTE LTD",
+    "ASCENT PROPERTY MANAGEMENT SERVICESPTE LTD": "ASCENT PROPERTY MANAGEMENT SERVICES PTE LTD",
+    "BARRINGHAM INTERNATIONAL PROPERTY MANAEGEMENT PTE LTD": "BARRINGHAM INTERNATIONAL PROPERTY MANAGEMENT PTE LTD",
+    "COLLIERS INTERNATIONAL CONSULTANTS & VALUATION": "COLLIERS INTERNATIONAL CONSULTANCY & VALUATION (S) PTE LTD",
+    "PHILIP MOHTA MANAGEMENT PTE LTD": "PHILIP MOTHA PROPERTY MANAGEMENT PTE LTD"
+  },
+  "display": {
+    "CITIPROP TENANCY MANGEMENT PTE LTD": "Citiprop Tenancy Management Pte Ltd"
+  },
+  "notFirm": [
+    "MCST",
+    "N",
+    "SELF MANAGED",
+    "SELF MANAGEMENT",
+    "DEVELOPER",
+    "NO MANAGING AGENT",
+    "NIL"
+  ]
+}
