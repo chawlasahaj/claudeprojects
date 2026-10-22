@@ -24,10 +24,15 @@
     <p style="margin-top: 12px">Each signal scores 0 to 1 and is weighted. When a signal can't be measured, it is left out and the other weights are scaled up. For example, size isn't used if we don't know how many units your development has. The match score is the result out of 100. Your current agent is left out unless you choose to include it.</p>
     <p>Only firms that manage at least 3 developments are suggested. Many names that appear for just one or two developments are developers, owners or individuals running their own building. Every firm is still listed under <a href="agents.html">Agents</a>, and you can invite any of them from their page.</p>
 
+    <h2>Homes, offices and factories</h2>
+    <p>Running a condo is a different job from running an office tower or a factory estate, so by default your development is compared only with developments of the same kind. For a condo, that means other condos, apartments and mixed-use developments with homes above shops. For an office or shop building, it means offices, shops and mixed use. The nearby count, the size match, the portfolio size and the 3-development minimum all count only those. You can change this under "Developments to compare with", including to "All types".</p>
+    <p>BCA's list doesn't say what kind of building each MCST is, so we work it out from the zoning at its postal code on URA's Master Plan land-use map. Residential zones count as homes; commercial, hotel and business park zones as offices and shops; Business 1 and 2 zones as industrial; and land zoned for both homes and shops, or "white", as mixed use. If the map point lands on a road or park, we use the zone beside it. If there's no zone at all, we go by the name, for example "Residences" or "Industrial Building".</p>
+
     <h2>Where the data comes from</h2>
     <ul id="sources">
       <li><b>Who manages what:</b> BCA's <a href="https://data.gov.sg/datasets/d_1f9391a2f1476cdaf4f05a8d3a05c257/view" rel="noopener">Management Corporation Strata Title</a> dataset on data.gov.sg. It lists every MCST with its address, number of strata lots and managing agent. We refresh it every month and keep a dated record of which agent manages each MCST. That record is how we see switches.</li>
       <li><b>Locations:</b> each postal code is placed on the map with <a href="https://www.onemap.gov.sg/" rel="noopener">OneMap</a> from the Singapore Land Authority.</li>
+      <li><b>Types of development:</b> URA's <a href="https://data.gov.sg/datasets/d_a8c3546b26712e35021f3a681d0353ae/view" rel="noopener">Master Plan 2025 Land Use Layer</a> on data.gov.sg.</li>
       <li><b>Accreditation:</b> the list of Accredited Managing Agents (Registered) published by <a href="https://www.sisv.org.sg/ama-Registered-list.aspx" rel="noopener">SISV</a> under the scheme it runs with APFM, which BCA recognises.</li>
     </ul>
     <div id="status" class="notice"></div>
@@ -38,6 +43,7 @@
       <li>BCA's list leaves the managing agent blank for some developments, including a few large ones. Those show "none listed", and their agent's portfolio here is smaller than it really is.</li>
       <li>Where BCA's list names a person, or just "MCST", as the managing agent, we treat that development as self-managed and don't show the name.</li>
       <li>Firm names appear in BCA's list in different spellings. We merge obvious variants, and keep a list of fixes for the rest. If two firms look merged or one firm looks split, please tell us.</li>
+      <li>Zoning shows what the land is planned for, not what stands on it today. A few developments will be typed wrongly, for example an older office block on land now zoned for homes. Developments we can't type at all only count under "All types".</li>
       <li>Leaving an agent isn't always the agent's fault. Councils change for price, for a fresh start, or after a dispute. Treat switches as a prompt to ask questions, not a verdict.</li>
       <li>Big firms score well on portfolio size, but a smaller firm close by may suit a small development better. You can choose a size preference on the shortlist.</li>
     </ul>
@@ -49,11 +55,11 @@
     chrome("");
 
     const WHAT = {
-      nearby: "How many developments the firm manages within your chosen distance (3 km by default), counting up to 10. Firms already nearby know the area's contractors and can share staff cover.",
-      similar: "How many of its developments have between half and twice as many strata lots as yours, counting up to 10.",
+      nearby: "How many developments of your type the firm manages within your chosen distance (3 km by default), counting up to 10. Firms already nearby know the area's contractors and can share staff cover.",
+      similar: "How many of its developments of your type have between half and twice as many strata lots as yours, counting up to 10.",
       retention: `How many of the developments it managed at the start of our records have since moved to another agent. A firm that lost a quarter or more scores 0. This only counts once we have at least ${Math.round(MIN_HISTORY_DAYS / 30)} months of records.`,
       accredited: "Whether the firm is on the AMA (Registered) list. This only counts once our copy of the list is complete, so that no firm is marked down for a gap in our copy.",
-      scale: "The size of its whole portfolio: fewer than 3 developments scores low, and 30 or more scores full marks. If you prefer smaller firms, the scale is reversed above 40.",
+      scale: "How many developments of your type it manages: fewer than 3 scores low, and 30 or more scores full marks. If you prefer smaller firms, the scale is reversed above 40.",
     };
     $("#signals").innerHTML = Object.entries(WEIGHTS).map(([k, w]) => `<tr><td><b>${esc(SIGNAL_LABELS[k])}</b></td><td class="num">${w}</td><td>${esc(WHAT[k])}</td></tr>`).join("");
 
@@ -63,6 +69,9 @@
       const parts = [
         `BCA data as of ${fmtDate(m.fetchedAt)}: ${fmtInt(m.counts.mcsts)} active MCSTs and ${fmtInt(m.counts.firms)} managing agents. ${fmtInt(m.counts.noAgent)} MCSTs list no managing agent.`,
         `${fmtInt(m.counts.located)} MCSTs placed on the map; strata lots known for ${fmtInt(m.counts.withLots)}.`,
+        m.landUse
+          ? `Types: ${fmtInt(m.landUse.counts.home)} residential, ${fmtInt(m.landUse.counts.mixed)} mixed use, ${fmtInt(m.landUse.counts.commercial)} commercial, ${fmtInt(m.landUse.counts.industrial)} industrial and ${fmtInt(m.landUse.counts.unknown)} unknown, from ${m.landUse.source ?? "URA's Master Plan"}.`
+          : "Types of development: not worked out yet, so every development counts.",
         m.history ? `Switches tracked from ${fmtDate(m.history.since)} to ${fmtDate(m.history.until)}: ${fmtInt(m.history.switches)}.` : "Switches: tracking started with the first monthly refresh.",
         m.accreditation.complete
           ? `Accreditation list checked ${fmtDate(m.accreditation.checked)}: ${m.accreditation.matched} of ${m.accreditation.listed} firms matched to BCA's names.`

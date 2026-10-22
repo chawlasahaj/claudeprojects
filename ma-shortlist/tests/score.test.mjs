@@ -96,3 +96,39 @@ test("shortlist: can include the current agent, and works without coordinates", 
   const noCoords = shortlist({ ...target, lat: null, lng: null }, mcsts, firms, {});
   assert.match(noCoords[0].reasons[0].text, /in your postal district/);
 });
+
+test("shortlist: only developments of the chosen type count", () => {
+  // "office" runs three offices next door and no homes; "near" runs homes.
+  const typed = [
+    ...mcsts.map((m) => ({ ...m, use: "home" })),
+    { ...M("20", "office", 1.3200, 103.8000, 300), use: "commercial" },
+    { ...M("21", "office", 1.3201, 103.8001, 300), use: "commercial" },
+    { ...M("22", "office", 1.3202, 103.8002, 300), use: "mixed" },
+    { ...M("23", "office", 1.3203, 103.8003, 300), use: null },
+  ];
+  const withOffice = [...firms, { id: "office", name: "Office Co", count: 4, byUse: { home: 0, mixed: 1, commercial: 2, industrial: 0 }, history: null, accredited: null }];
+  const homes = shortlist(target, typed, withOffice, { group: "home" });
+  // One mixed-use development isn't enough to be suggested for homes.
+  assert.ok(!homes.some((x) => x.firm.id === "office"));
+  assert.match(homes[0].reasons[0].text, /Manages 3 residential developments within 3 km/);
+  const offices = shortlist(target, typed, withOffice, { group: "commercial" });
+  const office = offices.find((x) => x.firm.id === "office");
+  assert.equal(office.count, 3);
+  assert.equal(office.nearby.length, 3); // commercial and mixed, not the unknown one
+  assert.match(office.reasons.at(-1).text, /Manages 3 commercial developments, 4 developments in total/);
+  // Firms without type counts (older data) keep their full count.
+  assert.ok(offices.some((x) => x.firm.id === "near"));
+  const all = shortlist(target, typed, withOffice, { group: "all" });
+  assert.equal(all.find((x) => x.firm.id === "office").nearby.length, 4);
+});
+
+test("development groups", async () => {
+  const { inGroup, groupFor, groupCount } = await import("../web/lib/use.js");
+  assert.ok(inGroup("mixed", "home") && inGroup("mixed", "commercial") && !inGroup("mixed", "industrial"));
+  assert.ok(!inGroup(null, "home") && inGroup(null, "all") && inGroup("industrial", "unknown-group"));
+  assert.equal(groupFor("commercial"), "commercial");
+  assert.equal(groupFor("mixed"), "home");
+  assert.equal(groupFor(null), "home");
+  assert.equal(groupCount({ count: 9, byUse: { home: 4, mixed: 2, commercial: 3, industrial: 0 } }, "home"), 6);
+  assert.equal(groupCount({ count: 9 }, "home"), 9);
+});

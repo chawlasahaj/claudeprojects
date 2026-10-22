@@ -5,7 +5,6 @@
 //   node scripts/fetch-mcst.mjs --history-only --dataset <id> --date 2024-08-31
 //                                                   save another dataset only as a dated history snapshot
 // Options: --data <dir> (default data), --date YYYY-MM-DD (default today).
-// Set DATA_GOV_SG_API_KEY for higher rate limits; it isn't required.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -13,34 +12,15 @@ import { csvToObjects } from "./lib/csv.mjs";
 import { normaliseTable, isActive, isSubMc } from "./lib/rows.mjs";
 import { sameAgents } from "./lib/history.mjs";
 import { ROOT, parseArgs, readJson, writeJson, fetchRetry, sleep, today } from "./lib/io.mjs";
+import { getJson, downloadUrl, metadata } from "./lib/datagov.mjs";
 
 export const DATASET = "d_1f9391a2f1476cdaf4f05a8d3a05c257";
-const headers = process.env.DATA_GOV_SG_API_KEY ? { "x-api-key": process.env.DATA_GOV_SG_API_KEY } : {};
 
-async function getJson(url) {
-  const res = await fetchRetry(url, { headers });
-  return res.json();
-}
-
-// The open-data download flow: initiate, then poll until a file URL appears.
 async function downloadCsv(id) {
-  const base = `https://api-open.data.gov.sg/v1/public/api/datasets/${id}`;
-  try {
-    await getJson(`${base}/initiate-download`);
-  } catch (e) {
-    console.warn(`initiate-download: ${e.message}`);
-  }
-  for (let i = 0; i < 20; i++) {
-    const j = await getJson(`${base}/poll-download`);
-    if (j?.data?.url) {
-      const buf = Buffer.from(await (await fetchRetry(j.data.url)).arrayBuffer());
-      // Some BCA datasets download as Excel files (a zip, starting "PK"); those go through the datastore API.
-      if (buf.subarray(0, 2).toString() === "PK") throw new Error("the download is an Excel file, not a CSV");
-      return buf.toString("utf8");
-    }
-    await sleep(3000);
-  }
-  throw new Error("poll-download never returned a file URL");
+  const buf = Buffer.from(await (await fetchRetry(await downloadUrl(id))).arrayBuffer());
+  // Some BCA datasets download as Excel files (a zip, starting "PK"); those go through the datastore API.
+  if (buf.subarray(0, 2).toString() === "PK") throw new Error("the download is an Excel file, not a CSV");
+  return buf.toString("utf8");
 }
 
 // Fallback: page through the CKAN datastore API.
@@ -52,17 +32,6 @@ async function datastoreObjects(id) {
     out.push(...records.map(({ _id, ...r }) => r));
     if (records.length < 1000 || out.length >= (j.result.total ?? Infinity)) return out;
     await sleep(1500);
-  }
-}
-
-async function metadata(id) {
-  try {
-    const j = await getJson(`https://api-production.data.gov.sg/v2/public/api/datasets/${id}/metadata`);
-    const d = j?.data ?? {};
-    return { title: d.name ?? null, updated: d.lastUpdatedAt ?? null, coverageEnd: d.coverageEnd ?? null };
-  } catch (e) {
-    console.warn(`metadata: ${e.message}`);
-    return { title: null, updated: null, coverageEnd: null };
   }
 }
 

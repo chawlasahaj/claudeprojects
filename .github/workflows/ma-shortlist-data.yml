@@ -1,4 +1,4 @@
-# Refreshes StrataMatch's data from BCA's list of MCSTs on data.gov.sg and commits it.
+# Refreshes StrataMatch's data from BCA's list of MCSTs (and URA's land-use map) on data.gov.sg and commits it.
 # Runs on the 2nd of every month, on demand, and whenever the data scripts or the name and
 # accreditation fixes change. It commits to the branch it ran on, so main stays current
 # and Cloudflare Pages republishes the site.
@@ -47,6 +47,13 @@ jobs:
         continue-on-error: true
         timeout-minutes: 35
         run: node scripts/geocode.mjs --max-minutes 30
+
+      # URA's land-use map tells homes from offices and factories. The layer is only
+      # downloaded when there are postal codes it hasn't been checked for.
+      - name: Find each development's land-use zone
+        continue-on-error: true
+        timeout-minutes: 15
+        run: node scripts/landuse.mjs
 
       - name: Build the site data
         run: node scripts/build-data.mjs

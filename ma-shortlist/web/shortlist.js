@@ -1,6 +1,7 @@
 import { chrome, $, $$, esc, loadMeta, loadAgents, loadMcsts, store, picks, plural, fmtInt, fmtMonth, debounce, NO_DATA } from "./app.js";
 import { shortlist, historyDays, MIN_HISTORY_DAYS } from "./lib/score.js";
 import { postalDistrict, districtLabel } from "./lib/geo.js";
+import { GROUPS, USE_LABELS, groupFor } from "./lib/use.js";
 
 chrome("shortlist");
 
@@ -15,6 +16,9 @@ if (!meta || !agents || !mcsts) {
 function start() {
 
   const firmById = new Map(agents.map((a) => [a.id, a]));
+  // Types come from URA's zoning; until that's in the data, every development counts.
+  const hasTypes = !!meta.landUse;
+  $("#type-field").hidden = !hasTypes;
   const index = mcsts.map((m) => ({ m, hay: `${m.name} ${m.postal} ${m.mcst}`.toLowerCase() }));
   $("#m-current").insertAdjacentHTML("beforeend", [...agents].sort((a, b) => a.name.localeCompare(b.name)).map((a) => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join(""));
 
@@ -75,7 +79,7 @@ function start() {
   input.addEventListener("blur", () => setTimeout(() => ((matches = []), showList()), 150));
 
   function choose(m) {
-    setTarget({ key: m.key, mcst: m.mcst, name: m.name, address: m.address, postal: m.postal, lat: m.lat, lng: m.lng, lots: m.lots, currentFirm: m.firm });
+    setTarget({ key: m.key, mcst: m.mcst, name: m.name, address: m.address, postal: m.postal, lat: m.lat, lng: m.lng, lots: m.lots, currentFirm: m.firm, use: m.use ?? null });
     input.value = "";
     matches = [];
     showList();
@@ -87,7 +91,8 @@ function start() {
     const lots = parseInt($("#m-lots").value, 10) || null;
     const same = mcsts.find((m) => m.postal === postal && m.lat != null);
     const coords = same ? { lat: same.lat, lng: same.lng } : await oneMap(postal);
-    setTarget({ key: null, name: `Postal code ${postal}`, postal, lots, ...coords, currentFirm: $("#m-current").value || null });
+    const use = mcsts.find((m) => m.postal === postal)?.use ?? null;
+    setTarget({ key: null, name: `Postal code ${postal}`, postal, lots, ...coords, currentFirm: $("#m-current").value || null, use });
   });
 
   async function oneMap(postal) {
@@ -101,9 +106,11 @@ function start() {
 
   // ---- Showing the shortlist ----
   let target = store.get("target");
+  // A development saved before types were in the data, or since reclassified.
+  if (target?.key) target.use = mcsts.find((m) => m.key === target.key)?.use ?? null;
 
   function setTarget(t) {
-    target = t;
+    target = { ...t, group: groupFor(t.use) };
     store.set("target", t);
     render();
     $("#chosen").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -119,6 +126,11 @@ function start() {
       opts.preference = $("#o-pref").value;
       opts.includeCurrent = $("#o-current").checked;
       store.set("shortlistOptions", opts);
+      // The type goes with the development, so picking another one resets it.
+      if (target) {
+        target.group = $("#o-type").value;
+        store.set("target", target);
+      }
       render();
     });
   }
@@ -130,6 +142,8 @@ function start() {
     if (!target) return;
     const current = target.currentFirm ? firmById.get(target.currentFirm) : null;
     const d = postalDistrict(target.postal);
+    const group = hasTypes ? (GROUPS[target.group] ? target.group : groupFor(target.use)) : "all";
+    $("#o-type").value = group;
     $("#chosen").hidden = false;
     $("#options").hidden = false;
     $("#chosen").innerHTML = `
@@ -137,7 +151,7 @@ function start() {
         <div>
           <div class="eyebrow">Shortlist for</div>
           <h2 style="margin: 0">${esc(target.name)}</h2>
-          <div class="muted">${[target.mcst ? `MCST ${esc(target.mcst)}` : "", target.lots ? `${fmtInt(target.lots)} strata lots` : "Size unknown", esc(districtLabel(d))].filter(Boolean).join(" · ")}</div>
+          <div class="muted">${[target.mcst ? `MCST ${esc(target.mcst)}` : "", target.lots ? `${fmtInt(target.lots)} strata lots` : "Size unknown", hasTypes && target.use ? USE_LABELS[target.use] : "", esc(districtLabel(d))].filter(Boolean).join(" · ")}</div>
           <div class="muted">Current agent: ${current ? `<a href="agent.html?id=${esc(current.id)}">${esc(current.name)}</a>` : "none listed"}</div>
         </div>
         <button class="btn quiet small" type="button" id="change">Change development</button>
@@ -153,6 +167,7 @@ function start() {
       excludeCurrent: !opts.includeCurrent,
       history: meta.history,
       accreditationComplete: useAccreditation,
+      group,
     });
 
     const used = ["nearby experience", target.lots ? "similar-size experience" : null, "portfolio size", useRetention ? "client retention" : null, useAccreditation ? "accreditation" : null].filter(Boolean);
@@ -163,9 +178,9 @@ function start() {
 
     $("#results").innerHTML = `
       <h2>Agents worth asking for a quote</h2>
-      <p class="muted">Ranked on public data: ${used.join(", ")}. It's a starting point for getting quotes, not a rating of service quality. <a href="methodology.html">How it works</a></p>
+      <p class="muted">Ranked on public data: ${used.join(", ")}.${hasTypes ? ` ${GROUPS[group].note}` : ""} It's a starting point for getting quotes, not a rating of service quality. <a href="methodology.html">How it works</a></p>
       ${notes.length ? `<div class="notice" style="margin-bottom: 16px">${notes.map(esc).join(" ")}</div>` : ""}
-      ${results.map(card).join("") || `<div class="notice">No agents found. Try a larger distance.</div>`}
+      ${results.map((r) => card(r, group)).join("") || `<div class="notice">No agents found. Try a larger distance${group === "all" ? "" : " or another type of development"}.</div>`}
       <p class="muted" style="margin-top: 16px">Want more choice? <a href="agents.html">Browse every agent</a> and add any of them from their page.</p>`;
     for (const cb of $$("[data-pick]")) {
       cb.addEventListener("change", () => {
@@ -176,21 +191,21 @@ function start() {
     renderTray();
   }
 
-  function card(r) {
+  function card(r, group) {
     const f = r.firm;
     const id = esc(f.id);
     const nearby = r.nearby.slice(0, 12);
     return `<article class="card result">
       <div>
         <h3><a href="agent.html?id=${id}">${esc(f.name)}</a> ${f.accredited ? `<span class="badge">AMA</span>` : ""}</h3>
-        <div class="muted">${plural(f.count, "development")}${f.units ? ` · ${fmtInt(f.units)} strata lots` : ""}</div>
+        <div class="muted">${plural(r.count, GROUPS[group].noun)}${r.count !== f.count ? ` (${fmtInt(f.count)} in total)` : ""}${f.units ? ` · ${fmtInt(f.units)} strata lots` : ""}</div>
       </div>
       <div class="score" title="Match score out of 100">${r.score}<small>match</small></div>
       <ul class="reasons">${r.reasons.map((x) => `<li class="${x.tone}">${esc(x.text)}</li>`).join("")}</ul>
       <div class="result-actions">
         <label class="check" style="margin: 0"><input type="checkbox" data-pick="${id}" ${picks.has(f.id) ? "checked" : ""}> Invite to quote</label>
         ${nearby.length ? `<details class="nearby"><summary>Their developments near you (${r.nearby.length})</summary>
-          <ul>${nearby.map((m) => `<li>${esc(m.name)}${m.km != null ? ` · ${m.km.toFixed(1)} km` : ""}${m.lots ? ` · ${fmtInt(m.lots)} lots` : ""}</li>`).join("")}</ul>
+          <ul>${nearby.map((m) => `<li>${esc(m.name)}${m.km != null ? ` · ${m.km.toFixed(1)} km` : ""}${m.lots ? ` · ${fmtInt(m.lots)} lots` : ""}${hasTypes ? ` · ${USE_LABELS[m.use] ?? "type unknown"}` : ""}</li>`).join("")}</ul>
           <p class="muted" style="margin: 8px 0 0">Good places to ask for a reference: write to the council, care of the management office.</p></details>` : ""}
       </div>
     </article>`;

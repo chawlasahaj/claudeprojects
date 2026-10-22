@@ -2,6 +2,7 @@
 // explains each signal; keep the two in step.
 
 import { between, postalDistrict } from "./geo.js";
+import { GROUPS, inGroup, groupCount } from "./use.js";
 
 export const WEIGHTS = { nearby: 35, similar: 15, retention: 20, accredited: 15, scale: 15 };
 export const SIGNAL_LABELS = {
@@ -53,12 +54,14 @@ export function historyDays(history) {
 
 /**
  * @param target  { lat, lng, postal, lots, currentFirm }
- * @param mcsts   [{ key, name, postal, lat, lng, lots, firm }]
- * @param firms   [{ id, name, count, accredited, history: { startCount, gained, lost } | null }]
- * @param opts    { radiusKm, preference, accreditationComplete, history: { since, until }, limit, excludeCurrent }
+ * @param mcsts   [{ key, name, postal, lat, lng, lots, firm, use }]
+ * @param firms   [{ id, name, count, byUse, accredited, history: { startCount, gained, lost } | null }]
+ * @param opts    { radiusKm, preference, accreditationComplete, history: { since, until }, limit, excludeCurrent,
+ *                  group: "home" | "commercial" | "industrial" | "all" (which developments count; default all) }
  */
 export function shortlist(target, mcsts, firms, opts = {}) {
   const radiusKm = opts.radiusKm ?? 3;
+  const group = GROUPS[opts.group] ? opts.group : "all";
   const limit = opts.limit ?? 6;
   const useRetention = historyDays(opts.history) >= MIN_HISTORY_DAYS;
   const useAccreditation = !!opts.accreditationComplete;
@@ -67,7 +70,7 @@ export function shortlist(target, mcsts, firms, opts = {}) {
 
   const byFirm = new Map();
   for (const m of mcsts) {
-    if (!m.firm || m.key === target.key) continue;
+    if (!m.firm || m.key === target.key || !inGroup(m.use, group)) continue;
     if (!byFirm.has(m.firm)) byFirm.set(m.firm, { nearby: [], similar: 0 });
     const agg = byFirm.get(m.firm);
     const km = hasCoords ? between(target, m) : null;
@@ -81,7 +84,8 @@ export function shortlist(target, mcsts, firms, opts = {}) {
   for (const firm of firms) {
     const isCurrent = firm.id === target.currentFirm;
     if (opts.excludeCurrent !== false && isCurrent) continue;
-    if (!firm.count || (firm.count < (opts.minPortfolio ?? MIN_PORTFOLIO) && !isCurrent)) continue;
+    const count = groupCount(firm, group);
+    if (!count || (count < (opts.minPortfolio ?? MIN_PORTFOLIO) && !isCurrent)) continue;
     const agg = byFirm.get(firm.id) ?? { nearby: [], similar: 0 };
     agg.nearby.sort((a, b) => (a.km ?? 99) - (b.km ?? 99));
     const signals = {
@@ -89,7 +93,7 @@ export function shortlist(target, mcsts, firms, opts = {}) {
       similar: target.lots ? logScore(agg.similar, 10) : null,
       retention: useRetention ? retentionScore(firm.history) : null,
       accredited: useAccreditation ? (firm.accredited ? 1 : 0) : null,
-      scale: scaleScore(firm.count, opts.preference),
+      scale: scaleScore(count, opts.preference),
     };
     let sum = 0;
     let weight = 0;
@@ -99,11 +103,11 @@ export function shortlist(target, mcsts, firms, opts = {}) {
       weight += WEIGHTS[k];
     }
     const score = weight ? Math.round((sum / weight) * 100) : 0;
-    results.push({ firm, score, signals, nearby: agg.nearby, similarCount: agg.similar });
+    results.push({ firm, score, signals, count, nearby: agg.nearby, similarCount: agg.similar });
   }
 
-  results.sort((a, b) => b.score - a.score || b.nearby.length - a.nearby.length || b.firm.count - a.firm.count);
-  return results.slice(0, limit).map((r) => ({ ...r, reasons: reasons(r, target, { radiusKm, useRetention, history: opts.history, hasCoords }) }));
+  results.sort((a, b) => b.score - a.score || b.nearby.length - a.nearby.length || b.count - a.count);
+  return results.slice(0, limit).map((r) => ({ ...r, reasons: reasons(r, target, { radiusKm, useRetention, history: opts.history, hasCoords, group }) }));
 }
 
 const fmtMonth = (iso) => new Date(iso).toLocaleDateString("en-SG", { month: "short", year: "numeric" });
@@ -112,16 +116,18 @@ const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 export function reasons(r, target, ctx) {
   const out = [];
   const { firm, nearby, similarCount } = r;
+  const group = ctx.group ?? "all";
+  const noun = GROUPS[group].noun;
   const where = ctx.hasCoords ? `within ${ctx.radiusKm} km` : "in your postal district";
   if (nearby.length) {
     const closest = nearby[0];
     const dist = closest.km != null ? `, closest ${closest.km.toFixed(1)} km away` : "";
-    out.push({ tone: "good", text: `Manages ${plural(nearby.length, "development")} ${where}${dist}` });
+    out.push({ tone: "good", text: `Manages ${plural(nearby.length, noun)} ${where}${dist}` });
   } else {
-    out.push({ tone: "neutral", text: `No developments ${where}` });
+    out.push({ tone: "neutral", text: `No ${noun}s ${where}` });
   }
   if (target.lots && similarCount) {
-    out.push({ tone: "good", text: `${plural(similarCount, "development")} of a similar size (${Math.ceil(target.lots / 2)}–${target.lots * 2} lots)` });
+    out.push({ tone: "good", text: `${plural(similarCount, noun)} of a similar size (${Math.ceil(target.lots / 2)}–${target.lots * 2} lots)` });
   }
   const h = firm.history;
   if (ctx.useRetention && h) {
@@ -136,6 +142,7 @@ export function reasons(r, target, ctx) {
     }
   }
   if (firm.accredited) out.push({ tone: "good", text: `AMA (Registered) accredited${firm.accredited.category ? `, Category ${firm.accredited.category}` : ""}` });
-  out.push({ tone: "neutral", text: `Manages ${plural(firm.count, "development")} in total` });
+  const count = r.count ?? firm.count;
+  out.push({ tone: "neutral", text: group === "all" || count === firm.count ? `Manages ${plural(firm.count, "development")} in total` : `Manages ${plural(count, noun)}, ${firm.count} developments in total` });
   return out;
 }

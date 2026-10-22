@@ -26,6 +26,7 @@ function buildSite() {
   const node = (...a) => execFileSync(process.execPath, a, { cwd: ROOT, stdio: "pipe" });
   node("scripts/fetch-mcst.mjs", "--csv", path.join(FIX, "mcst-sample-earlier.csv"), "--data", data, "--date", "2026-03-01");
   node("scripts/fetch-mcst.mjs", "--csv", path.join(FIX, "mcst-sample.csv"), "--data", data, "--date", "2026-10-01");
+  node("scripts/landuse.mjs", "--data", data, "--geojson", path.join(FIX, "landuse.geojson"));
   node("scripts/build-data.mjs", "--data", data, "--out", path.join(site, "data"), "--aliases", path.join(ROOT, "data", "ma-aliases.json"));
   const empty = path.join(tmp, "empty");
   fs.cpSync(path.join(ROOT, "web"), empty, { recursive: true });
@@ -76,13 +77,21 @@ async function run(name, device, base) {
   await page.click("#dev-list li >> nth=0");
   await page.waitForSelector(".result");
   check(!(await page.isVisible("#tray")), "no picks bar before anything is picked");
-  const names = await page.$$eval(".result h3 a", (as) => as.map((a) => a.textContent));
-  check(names.length === 3, `three other agents suggested (${names.join(", ")})`);
+  const resultNames = () => page.$$eval(".result h3 a", (as) => as.map((a) => a.textContent));
+  check((await page.inputValue("#o-type")) === "home", "a condo is compared with homes by default");
+  let names = await resultNames();
+  check(names.length === 2, `two agents that run homes suggested (${names.join(", ")})`);
+  check(!names.some((n) => /Delta/.test(n)), "a firm that only runs offices isn't suggested for a condo");
   check(!names.some((n) => /Evergreen/.test(n)), "a one-development firm isn't suggested");
   check(!names.some((n) => /Alpha/.test(n)), "current agent left out");
   const reasons = await page.textContent("#results");
-  check(/within 3 km/.test(reasons), "reasons mention nearby developments");
+  check(/residential developments within 3 km/.test(reasons), "reasons mention nearby homes");
   check(/Lost 2 of 6 clients since/.test(reasons), "retention reason shown for Brightway");
+  await page.selectOption("#o-type", "all");
+  await page.waitForFunction(() => [...document.querySelectorAll(".result h3 a")].some((a) => /Delta/.test(a.textContent)));
+  names = await resultNames();
+  check(names.length === 3, `"All types" brings the office firm back (${names.join(", ")})`);
+  check(/Commercial/.test(await page.textContent("#results")), "nearby developments show their type");
   await page.check("#o-current");
   await page.waitForFunction(() => [...document.querySelectorAll(".result h3 a")].some((a) => /Alpha/.test(a.textContent)));
   check(true, "including the current agent brings it back");
@@ -95,6 +104,9 @@ async function run(name, device, base) {
   // Agents and an agent page
   await page.goto(base + "agents.html");
   check((await page.$$(".agent-row:not(.head)")).length === 5, "agents page lists 5 firms");
+  await page.selectOption("#type", "commercial");
+  check((await page.$$(".agent-row:not(.head)")).length === 1, "type filter: only Delta runs offices and shops");
+  await page.selectOption("#type", "all");
   await page.fill("#q", "coral");
   check((await page.$$(".agent-row:not(.head)")).length === 1, "search narrows the list");
   await shot("3-agents");
@@ -103,6 +115,7 @@ async function run(name, device, base) {
   const agentText = await page.textContent("#body");
   check(/Left this agent/.test(agentText) && /EAST FIXTURE/.test(agentText), "agent page lists developments that left");
   check((await page.$$("#devs tr")).length === 5, "agent page lists its 5 developments");
+  check(/Residential/.test(await page.textContent("#devs")), "agent page shows each development's type");
   await shot("4-agent");
 
   // RFP pack

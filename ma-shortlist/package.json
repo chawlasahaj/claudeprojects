@@ -8,7 +8,8 @@
     "serve": "npx http-server web -p 4174 -c-1",
     "fetch": "node scripts/fetch-mcst.mjs",
     "geocode": "node scripts/geocode.mjs",
+    "landuse": "node scripts/landuse.mjs",
     "build-data": "node scripts/build-data.mjs",
-    "refresh": "node scripts/fetch-mcst.mjs && node scripts/geocode.mjs && node scripts/build-data.mjs"
+    "refresh": "node scripts/fetch-mcst.mjs && node scripts/geocode.mjs && node scripts/landuse.mjs && node scripts/build-data.mjs"
   }
 }
