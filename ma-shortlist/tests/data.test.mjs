@@ -279,3 +279,13 @@ test("land use: features are read the same way however the file is split", async
   assert.equal(whole[0].properties.Name, "kml_{1}");
   assert.deepEqual(await read(7), whole);
 });
+
+test("build: a firm's name uses BCA's best casing even when that spelling is on a left-out office", async () => {
+  const { build } = await import("../scripts/build-data.mjs");
+  const row = (key, name, ma) => ({ key, mcst: key, sub: "", type: "MC", name, address: "", postal: "259001", tel: "", status: "ACTIVE", lots: 100, ma });
+  const current = { rows: [row("1", "SUNNY CONDOMINIUM", "JONES LANG LASALLE PTE LTD"), row("2", "SUNNY CONDOMINIUM 2", "JONES LANG LASALLE PTE LTD"), row("3", "TALL OFFICE BUILDING", "Jones Lang LaSalle Pte Ltd")], fetchedAt: "2026-10-01", source: {} };
+  const r = build({ current, history: [], geocodes: {}, aliases: {}, accreditation: {} });
+  assert.equal(r.meta.counts.mcsts, 2);
+  assert.equal(r.agents[0].count, 2);
+  assert.equal(r.agents[0].name, "Jones Lang LaSalle Pte Ltd");
+});

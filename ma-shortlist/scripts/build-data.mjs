@@ -29,14 +29,17 @@ export function build({ current, history, geocodes, aliases, accreditation, land
   const mcsts = [];
   const types = { home: 0, mixed: 0, unknown: 0, commercial: 0, industrial: 0 };
   const leftOut = new Set();
+  // Every spelling of each firm, offices included, so the display name can use BCA's best casing.
+  const allSpellings = {};
   for (const r of rows) {
+    const f = r.ma ? resolve(r.ma) : null;
+    if (f) (allSpellings[f.id] ??= {})[r.ma] = (allSpellings[f.id][r.ma] ?? 0) + 1;
     const { use } = classify(r.name, landuse.zones?.[r.postal]);
     types[use ?? "unknown"]++;
     if (!isCondo(use)) {
       leftOut.add(r.key);
       continue;
     }
-    const f = r.ma ? resolve(r.ma) : null;
     const [lat, lng] = geocodes[r.postal] ?? [null, null];
     mcsts.push({ key: r.key, mcst: r.mcst, name: r.name, address: r.address, postal: r.postal, lat, lng, lots: r.lots, firm: f?.id ?? null, tel: r.tel });
     if (!f) continue;
@@ -77,7 +80,7 @@ export function build({ current, history, geocodes, aliases, accreditation, land
       const h = diff?.perFirm[f.id];
       return {
         id: f.id,
-        name: displayOverrides[f.key] ?? nameFor(spellings.map(([sp]) => sp)),
+        name: displayOverrides[f.key] ?? nameFor(Object.entries(allSpellings[f.id]).sort((a, b) => b[1] - a[1]).map(([sp]) => sp)),
         spellings: spellings.map(([s]) => s),
         count: f.count,
         units: f.units,
