@@ -10,10 +10,10 @@ export const USE_LABELS = {
 
 // Mixed-use developments have homes above shops, so they count with both.
 export const GROUPS = {
-  home: { label: "Homes: condos and apartments", noun: "residential development", uses: ["home", "mixed"], note: "Only condos, apartments and mixed-use developments count, not offices, shops or factories." },
-  commercial: { label: "Offices and shops", noun: "commercial development", uses: ["commercial", "mixed"], note: "Only offices, shops and mixed-use developments count." },
-  industrial: { label: "Industrial", noun: "industrial development", uses: ["industrial"], note: "Only industrial developments count." },
-  all: { label: "All types", noun: "development", uses: null, note: "Every type of development counts: homes, offices, shops and factories." },
+  home: { noun: "residential development", uses: ["home", "mixed"], note: "Only condos, apartments and mixed-use developments count, not offices, shops or factories." },
+  commercial: { noun: "commercial development", uses: ["commercial", "mixed"], note: "Only offices, shops and mixed-use developments count." },
+  industrial: { noun: "industrial development", uses: ["industrial"], note: "Only industrial developments count." },
+  all: { noun: "development", uses: null, note: "Every type of development counts: homes, offices, shops and factories." },
 };
 
 export const inGroup = (use, group) => !GROUPS[group]?.uses || GROUPS[group].uses.includes(use);
