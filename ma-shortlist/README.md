@@ -1,5 +1,7 @@
 # MA Shortlist
 
+**Live at https://condocouncil.pages.dev**
+
 A free, independent website for MCST councils in Singapore that are changing managing agent (MA). It has three parts:
 
 1. **Shortlist**: pick your development and see agents worth asking for a quote. They're ranked on public data only: developments managed nearby, developments of a similar size, clients kept or lost, accreditation and portfolio size.
@@ -39,16 +41,16 @@ Names with no business word in them are not shown as managing agents. This cover
 ## Going live on Cloudflare Pages (free, about 10 minutes)
 
 1. Make a free account at [dash.cloudflare.com](https://dash.cloudflare.com/sign-up).
-2. Go to **Workers & Pages → Create → Pages → Connect to Git**, and pick the `claudeprojects` repo.
+2. Go to **Workers & Pages → Create**, switch to the **Pages** tab, choose **Connect to Git**, and pick the `claudeprojects` repo.
 3. Set up the build:
-   - Project name: `ma-shortlist`. This gives you `https://ma-shortlist.pages.dev`. If the name is taken, pick another.
+   - Project name: `condocouncil`. This gives you `https://condocouncil.pages.dev`.
    - Production branch: `main`
    - Framework preset: **None**
    - Build command: leave empty
    - Build output directory: `ma-shortlist/web`
 4. **Save and Deploy.** Every push to `main` republishes the site, including the monthly data commits. Other branches get their own preview addresses.
 
-If Cloudflare created a **Worker** instead of a Pages project (its newer "Create" flow does this), the site deploys but shows **"No URLs enabled"**. To fix it, open the Worker, go to **Settings → Domains & Routes**, and enable the **workers.dev** route. The site is then at `https://<worker name>.<your subdomain>.workers.dev`.
+Use the **Pages** tab, not a Worker. Cloudflare's Create screen opens on Workers by default, and a Worker's address always includes the account name (`<worker>.<account>.workers.dev`). It also starts with **"No URLs enabled"** until the workers.dev route is switched on.
 
 ### Adding a custom domain later
 
