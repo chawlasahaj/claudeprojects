@@ -1,5 +1,5 @@
 {
-  "builtAt": "2026-10-22T11:03:44.470Z",
+  "builtAt": "2026-10-22T12:11:24.668Z",
   "source": {
     "id": "d_1f9391a2f1476cdaf4f05a8d3a05c257",
     "title": "Management Corporation Strata Title",
@@ -16,6 +16,20 @@
     "withLots": 3702
   },
   "history": null,
+  "landUse": {
+    "source": "Master Plan 2025 Land Use Layer",
+    "dataset": "d_a8c3546b26712e35021f3a681d0353ae",
+    "checked": "2026-10-22",
+    "byZone": 3632,
+    "byName": 24,
+    "counts": {
+      "home": 2219,
+      "mixed": 408,
+      "commercial": 490,
+      "industrial": 539,
+      "unknown": 46
+    }
+  },
   "accreditation": {
     "source": "https://www.sisv.org.sg/ama-Registered-list.aspx",
     "checked": "2026-10-22",
