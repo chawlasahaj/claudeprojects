@@ -24,6 +24,7 @@ ma-shortlist/
     ma-aliases.json       fixes for firm names (edit this)
     accreditation.json    the AMA (Registered) list (edit this)
   tests/                  npm test, npm run e2e
+  design/og-banner.cjs    renders web/images/og-banner.jpg, the link-preview image (npm run og-banner)
   PLAN.md                 what's built, what's next
 ```
 

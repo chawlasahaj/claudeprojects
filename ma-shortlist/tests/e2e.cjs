@@ -68,6 +68,11 @@ async function run(name, device, base) {
   await page.goto(base);
   await page.waitForSelector("#data-line:not(:empty)");
   check(/20 condos and the 5 managing agents/.test(await page.textContent("#data-line")), "home shows the data counts");
+  // Link previews (LinkedIn, WhatsApp, X) read these from the HTML as served, before any script runs.
+  const ogImage = await page.getAttribute('meta[property="og:image"]', "content");
+  check(ogImage === "https://stratamatch.pages.dev/images/og-banner.jpg", "home page has an absolute og:image");
+  const banner = await page.request.get(base + "images/og-banner.jpg");
+  check(banner.ok() && banner.headers()["content-type"] === "image/jpeg", "the share image is served as a JPEG");
   await shot("1-home");
 
   // Shortlist
