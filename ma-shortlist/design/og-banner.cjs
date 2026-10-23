@@ -18,18 +18,16 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><style>
     display: grid; grid-template-columns: 1fr 420px; overflow: hidden; }
   .left { padding: 56px 40px 52px 72px; display: flex; flex-direction: column; }
   .brand { display: flex; align-items: center; gap: 16px; font-size: 34px; font-weight: 800; }
-  .mark { width: 56px; height: 56px; border-radius: 14px; background: #0d6b57; color: #fff;
-    display: grid; place-items: center; font-size: 24px; font-weight: 800; }
-  .eyebrow { margin-top: 30px; color: #0d6b57; font-size: 20px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+  .brand svg { width: 46px; height: 46px; fill: #0d6b57; }
+  .eyebrow { margin-top: 30px; color: #5a6661; font-size: 23px; }
   h1 { margin-top: 12px; font-size: 54px; line-height: 1.08; font-weight: 800; letter-spacing: -0.01em; }
   .steps { margin-top: 26px; display: flex; flex-direction: column; gap: 10px; font-size: 23px; color: #2b3430; }
   .steps div { display: flex; align-items: center; gap: 14px; }
-  .steps b { width: 34px; height: 34px; border-radius: 50%; background: #e2f0eb; color: #0d6b57;
-    display: grid; place-items: center; font-size: 18px; flex: none; }
+  .steps b { color: #0d6b57; font-size: 23px; width: 22px; flex: none; }
   .foot { margin-top: auto; display: flex; justify-content: space-between; font-size: 21px; color: #5a6661; }
   .foot strong { color: #0d6b57; }
   .right { background: #0d6b57; padding: 56px 40px; display: flex; flex-direction: column; gap: 18px; justify-content: center; }
-  .card { background: #fff; border-radius: 16px; padding: 22px 24px; box-shadow: 0 6px 20px rgb(0 0 0 / 0.18); }
+  .card { background: #fff; border-radius: 8px; padding: 22px 24px; }
   .row { display: flex; justify-content: space-between; align-items: flex-start; }
   .name { height: 16px; width: 170px; border-radius: 8px; background: #1b2220; opacity: 0.85; }
   .sub { margin-top: 10px; height: 11px; width: 120px; border-radius: 6px; background: #dfe2dc; }
@@ -41,7 +39,7 @@ const html = `<!doctype html><html><head><meta charset="utf-8"><style>
   .card.dim { opacity: 0.75; }
 </style></head><body>
   <div class="left">
-    <div class="brand"><div class="mark">SM</div>StrataMatch</div>
+    <div class="brand"><svg viewBox="0 0 32 32"><path fill-rule="evenodd" d="M16 3 30.5 15.5H27V29H5V15.5H1.5ZM13 29v-8h6v8Z"/></svg>StrataMatch</div>
     <div class="eyebrow">For condo councils in Singapore</div>
     <h1>Changing managing agent? Start with a fair shortlist.</h1>
     <div class="steps">

@@ -19,7 +19,7 @@ export function chrome(active) {
   const header = document.createElement("header");
   header.className = "site-header";
   header.innerHTML = `<div class="wrap">
-    <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">SM</span>StrataMatch</a>
+    <a class="brand" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><path fill-rule="evenodd" d="M16 3 30.5 15.5H27V29H5V15.5H1.5ZM13 29v-8h6v8Z"/></svg>StrataMatch</a>
     <nav class="site-nav" aria-label="Main">${NAV.map(([id, href, label]) => `<a href="${href}"${id === active ? ' aria-current="page"' : ""}>${label}</a>`).join("")}</nav>
   </div>`;
   document.body.prepend(header);
@@ -27,7 +27,7 @@ export function chrome(active) {
   const footer = document.createElement("footer");
   footer.className = "site-footer";
   footer.innerHTML = `<div class="wrap">
-    <div>Free and independent. No commission, no paid placements.</div>
+    <div>Not affiliated with BCA or any managing agent.</div>
     <div><a href="methodology.html">How the shortlist works</a> · <a href="about.html">About and data</a> <span id="data-date"></span></div>
   </div>`;
   document.body.append(footer);
