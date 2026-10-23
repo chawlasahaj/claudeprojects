@@ -1,1 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#0d6b57"/><text x="16" y="21" font-family="system-ui,Arial,sans-serif" font-size="13" font-weight="800" fill="#fff" text-anchor="middle">SM</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><style>path{fill:#0d6b57}@media (prefers-color-scheme:dark){path{fill:#4fc4a2}}</style><path fill-rule="evenodd" d="M16 3 30.5 15.5H27V29H5V15.5H1.5ZM13 29v-8h6v8Z"/></svg>

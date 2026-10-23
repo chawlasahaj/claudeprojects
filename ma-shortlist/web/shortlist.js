@@ -212,7 +212,7 @@ function start() {
     const n = picks.all().length;
     const tray = $("#tray");
     tray.hidden = n === 0;
-    tray.innerHTML = `<span><b>${n}</b> agent${n === 1 ? "" : "s"} picked${n < 3 ? " · aim for 3 to 5" : ""}</span><a class="btn small" href="rfp.html">Build the RFP pack →</a>`;
+    tray.innerHTML = `<span><b>${n}</b> agent${n === 1 ? "" : "s"} picked${n < 3 ? " · aim for 3 to 5" : ""}</span><a class="btn small" href="rfp.html">Build the RFP pack</a>`;
   }
 
   render();
