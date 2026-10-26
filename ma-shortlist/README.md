@@ -25,6 +25,7 @@ ma-shortlist/
     accreditation.json    the AMA (Registered) list (edit this)
   tests/                  npm test, npm run e2e
   design/og-banner.cjs    renders web/images/og-banner.jpg, the link-preview image (npm run og-banner)
+  design/screenshots.cjs  renders design/screenshots/, the images on the repo's front page (npm run screenshots)
   PLAN.md                 what's built, what's next
 ```
 
