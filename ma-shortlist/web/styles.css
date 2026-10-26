@@ -254,6 +254,22 @@ main {
   background: var(--accent-soft);
   border-color: transparent;
 }
+.hello {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+.hello button {
+  background: none;
+  border: 0;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
 
 /* Buttons and forms */
 .btn {

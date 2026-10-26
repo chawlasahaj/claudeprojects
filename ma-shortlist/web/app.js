@@ -36,6 +36,32 @@ export function chrome(active) {
       if (m?.fetchedAt) $("#data-date").textContent = `· BCA data as of ${fmtDate(m.fetchedAt)}`;
     })
     .catch(() => {});
+  sayHi(header);
+  console.log("%cHi from Sahaj.", "font-weight: bold", "Curious how it works? The code's at https://github.com/chawlasahaj/claudeprojects");
+}
+
+// A one-time hello for visitors from LinkedIn: straight from linkedin.com, or through the
+// "Came from LinkedIn?" link in the repo's README (?hi=linkedin). Nothing leaves the browser.
+function sayHi(header) {
+  const params = new URLSearchParams(location.search);
+  let fromLinkedIn = params.get("hi") === "linkedin";
+  try {
+    fromLinkedIn ||= /(^|\.)linkedin\.com$|^lnkd\.in$/.test(new URL(document.referrer).hostname);
+  } catch {}
+  if (params.has("hi")) {
+    params.delete("hi");
+    history.replaceState(history.state, "", location.pathname + (params.size ? `?${params}` : "") + location.hash);
+  }
+  if (!fromLinkedIn || store.get("saidHi")) return;
+  store.set("saidHi", true);
+  const note = document.createElement("div");
+  note.className = "wrap";
+  note.innerHTML = `<div class="notice accent hello" role="status">
+    <span>Hi, LinkedIn. Thanks for stopping by. <a href="shortlist.html">Try it on your own condo</a>.</span>
+    <button type="button" aria-label="Close">×</button>
+  </div>`;
+  $("button", note).addEventListener("click", () => note.remove());
+  header.after(note);
 }
 
 // Data files. Missing data (before the first refresh) resolves to null, not an error.

@@ -75,6 +75,15 @@ async function run(name, device, base) {
   check(banner.ok() && banner.headers()["content-type"] === "image/jpeg", "the share image is served as a JPEG");
   const robots = await page.request.get(base + "robots.txt");
   check(robots.ok() && /^text\/plain/.test(robots.headers()["content-type"]) && /User-agent: LinkedInBot\nAllow: \//.test(await robots.text()), "robots.txt is plain text and lets LinkedIn in");
+  check(!(await page.isVisible(".hello")), "no LinkedIn hello on a normal visit");
+  await page.goto(base + "?hi=linkedin");
+  await page.waitForSelector(".hello");
+  check(/Hi, LinkedIn/.test(await page.textContent(".hello")) && !/hi=/.test(page.url()), "the README's LinkedIn link says hi, then tidies the address");
+  await page.click(".hello button");
+  check(!(await page.isVisible(".hello")), "the hello closes");
+  await page.goto(base + "?hi=linkedin");
+  await page.waitForSelector(".site-header");
+  check(!(await page.isVisible(".hello")), "the hello shows only once");
   // In its own tab: the browser logs the 404 itself as a console error.
   const lost = await ctx.newPage();
   const missing = await lost.goto(base + "no/such/page");
