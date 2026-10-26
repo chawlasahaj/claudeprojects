@@ -73,6 +73,15 @@ async function run(name, device, base) {
   check(ogImage === "https://stratamatch.pages.dev/images/og-banner.jpg", "home page has an absolute og:image");
   const banner = await page.request.get(base + "images/og-banner.jpg");
   check(banner.ok() && banner.headers()["content-type"] === "image/jpeg", "the share image is served as a JPEG");
+  const robots = await page.request.get(base + "robots.txt");
+  check(robots.ok() && /^text\/plain/.test(robots.headers()["content-type"]) && /User-agent: LinkedInBot\nAllow: \//.test(await robots.text()), "robots.txt is plain text and lets LinkedIn in");
+  // In its own tab: the browser logs the 404 itself as a console error.
+  const lost = await ctx.newPage();
+  const missing = await lost.goto(base + "no/such/page");
+  check(missing.status() === 404 && (await lost.textContent("h1")) === "Page not found", "a missing page is a real 404");
+  await lost.waitForSelector(".site-header .brand");
+  check((await lost.evaluate(() => getComputedStyle(document.body).backgroundColor)) !== "rgba(0, 0, 0, 0)", "the 404 page has the site's header and styles, even on a deep path");
+  await lost.close();
   await shot("1-home");
 
   // Shortlist
